@@ -58,6 +58,11 @@ docker compose up -d --build
 ## Changelog
 
 ### 2026-11-09
+- **SIPETRA SSO OAuth2 Callback & Handshake Fix**:
+  - Penyelarasan URI callback SIPETRA SSO menjadi `http://10.133.21.24:8007/auth/callback` sesuai entri registrasi resmi pada tabel `oauth_clients` di SIPETRA (`db_sipetra`).
+  - Penambahan route alias `/auth/callback` pada backend FastAPI (`chatbot/api.py` dan `api/routers/auth.py`).
+  - Perbaikan protokol pertukaran token OAuth2 (`/oauth/token`) menggunakan format form-urlencoded (`application/x-www-form-urlencoded`) sesuai standar RFC 6749 dan Laravel Passport.
+  - Pengubahan URL redirect pasca-login menggunakan relative path (`/admin/ingestion?token=...`) sehingga bekerja dinamis di server produksi tanpa terikat ke `localhost:5173`.
 - **Containerization & Production Server Deployment (Docker & Compose)**:
   - Multi-stage `Dockerfile`: Stage 1 Node 20 Alpine untuk build frontend Vue 3 + Tailwind CSS, Stage 2 Python 3.10 slim untuk backend FastAPI terpadu.
   - Optimasi PyTorch CPU-only (`--index-url https://download.pytorch.org/whl/cpu`) menghemat ~2.3 GB ukuran image container.
