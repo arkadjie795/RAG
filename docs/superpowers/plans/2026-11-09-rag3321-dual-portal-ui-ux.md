@@ -75,8 +75,13 @@
   Buat `tests/test_backend_api_routers.py` yang menguji endpoint `/api/auth/verify`, `/api/ingestion/status`, `/api/data/publications`, dan `/api/system/health`.
 - [ ] **Step 1.2: Run test to confirm failure**
   Jalankan `pytest tests/test_backend_api_routers.py` dan pastikan gagal karena router belum dibuat.
-- [ ] **Step 1.3: Implement `api/routers/auth.py`**
-  Sediakan endpoint verifikasi sesi SSO (`POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`) dengan konfigurasi JWT/Bearer token yang siap disambungkan ke SSO instansi BPS.
+- [ ] **Step 1.3: Implement `api/routers/auth.py` with SIPETRA SSO (OAuth2)**
+  Implementasikan protokol OAuth2 SIPETRA BPS Demak (`https://bpsdemak.com`) sesuai `SSO_GUIDE.md`:
+  - `GET /api/auth/sipetra/redirect`: Mengarahkan browser ke `https://bpsdemak.com/oauth/authorize` dengan scopes `identity_pegawai:read employee:read contact:read roles:read`.
+  - `GET /api/auth/sipetra/callback`: Menerima authorization `code`, menukarnya dengan access token di `https://bpsdemak.com/oauth/token`, mengambil profil pegawai dari `https://bpsdemak.com/api/user` (NIP, nama, email, jabatan, avatar), menerbitkan JWT session, dan me-redirect ke `http://localhost:5173/admin?token=...`.
+  - `GET /api/auth/me`: Mengembalikan data user terautentikasi atau status guest.
+  - `POST /api/auth/logout`: Menghapus sesi otentikasi admin.
+  - Sediakan fallback Mock Login Mode jika kredensial `SIPETRA_CLIENT_ID` belum diisi di `.env`.
 - [ ] **Step 1.4: Implement `api/routers/ingestion.py` & Ingestion Job Tracker**
   Sediakan endpoint `POST /api/ingestion/run` (mode `statis`, `all`, `pdf`), `GET /api/ingestion/status`, dan `POST /api/ingestion/stop` menggunakan thread non-blocking.
 - [ ] **Step 1.5: Implement `api/routers/data_viewer.py`**
