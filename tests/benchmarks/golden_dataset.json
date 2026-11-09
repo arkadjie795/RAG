@@ -1,0 +1,272 @@
+[
+  {
+    "id": "demak_pop_01",
+    "question": "Berapa jumlah penduduk di Kecamatan Sayung pada tahun 2024?",
+    "indicator": "Jumlah Penduduk",
+    "region": "Sayung",
+    "reference_year": "2024",
+    "unit": "Jiwa",
+    "answerable": true
+  },
+  {
+    "id": "demak_pop_02",
+    "question": "Berapa jumlah penduduk laki-laki di Kecamatan Mranggen tahun 2024?",
+    "indicator": "Jumlah Penduduk Laki-laki",
+    "region": "Mranggen",
+    "reference_year": "2024",
+    "unit": "Jiwa",
+    "answerable": true
+  },
+  {
+    "id": "demak_pop_03",
+    "question": "Berapa jumlah penduduk di Kecamatan Bonang tahun 2023?",
+    "indicator": "Jumlah Penduduk",
+    "region": "Bonang",
+    "reference_year": "2023",
+    "unit": "Jiwa",
+    "answerable": true
+  },
+  {
+    "id": "demak_pop_04",
+    "question": "Berapa rasio jenis kelamin (sex ratio) di Kecamatan Karangawen tahun 2024?",
+    "indicator": "Sex Ratio",
+    "region": "Karangawen",
+    "reference_year": "2024",
+    "unit": "",
+    "answerable": true
+  },
+  {
+    "id": "demak_pop_05",
+    "question": "Berapa kepadatan penduduk per km2 di Kecamatan Demak tahun 2024?",
+    "indicator": "Kepadatan Penduduk",
+    "region": "Demak",
+    "reference_year": "2024",
+    "unit": "Jiwa/km2",
+    "answerable": true
+  },
+  {
+    "id": "demak_agri_01",
+    "question": "Berapa luas panen padi di Kabupaten Demak tahun 2023?",
+    "indicator": "Luas Panen Padi",
+    "region": "Kabupaten Demak",
+    "reference_year": "2023",
+    "unit": "Hektar",
+    "answerable": true
+  },
+  {
+    "id": "demak_agri_02",
+    "question": "Berapa total produksi padi di Kabupaten Demak tahun 2023?",
+    "indicator": "Produksi Padi",
+    "region": "Kabupaten Demak",
+    "reference_year": "2023",
+    "unit": "Ton",
+    "answerable": true
+  },
+  {
+    "id": "demak_agri_03",
+    "question": "Berapa produksi jagung di Kecamatan Gajah tahun 2023?",
+    "indicator": "Produksi Jagung",
+    "region": "Gajah",
+    "reference_year": "2023",
+    "unit": "Kuintal/Ton",
+    "answerable": true
+  },
+  {
+    "id": "demak_agri_04",
+    "question": "Berapa luas lahan sawah di Kecamatan Dempet tahun 2024?",
+    "indicator": "Luas Sawah",
+    "region": "Dempet",
+    "reference_year": "2024",
+    "unit": "Ha",
+    "answerable": true
+  },
+  {
+    "id": "demak_fish_01",
+    "question": "Berapa produksi perikanan budidaya tambak di Kecamatan Wedung tahun 2023?",
+    "indicator": "Perikanan Budidaya Tambak",
+    "region": "Wedung",
+    "reference_year": "2023",
+    "unit": "Ton",
+    "answerable": true
+  },
+  {
+    "id": "demak_fish_02",
+    "question": "Berapa produksi ikan bandeng di Kecamatan Sayung tahun 2023?",
+    "indicator": "Produksi Ikan Bandeng",
+    "region": "Sayung",
+    "reference_year": "2023",
+    "unit": "Ton",
+    "answerable": true
+  },
+  {
+    "id": "demak_live_01",
+    "question": "Berapa populasi ternak sapi potong di Kabupaten Demak tahun 2024?",
+    "indicator": "Populasi Sapi Potong",
+    "region": "Kabupaten Demak",
+    "reference_year": "2024",
+    "unit": "Ekor",
+    "answerable": true
+  },
+  {
+    "id": "demak_live_02",
+    "question": "Berapa populasi kambing di Kecamatan Guntur tahun 2023?",
+    "indicator": "Populasi Kambing",
+    "region": "Guntur",
+    "reference_year": "2023",
+    "unit": "Ekor",
+    "answerable": true
+  },
+  {
+    "id": "demak_econ_01",
+    "question": "Berapa PDRB Atas Dasar Harga Berlaku (ADHB) Kabupaten Demak tahun 2023?",
+    "indicator": "PDRB ADHB",
+    "region": "Kabupaten Demak",
+    "reference_year": "2023",
+    "unit": "Miliar Rupiah",
+    "answerable": true
+  },
+  {
+    "id": "demak_econ_02",
+    "question": "Berapa laju pertumbuhan ekonomi Kabupaten Demak tahun 2023?",
+    "indicator": "Pertumbuhan Ekonomi",
+    "region": "Kabupaten Demak",
+    "reference_year": "2023",
+    "unit": "Persen",
+    "answerable": true
+  },
+  {
+    "id": "demak_econ_03",
+    "question": "Berapa garis kemiskinan di Kabupaten Demak pada tahun 2024?",
+    "indicator": "Garis Kemiskinan",
+    "region": "Kabupaten Demak",
+    "reference_year": "2024",
+    "unit": "Rupiah/Kapita/Bulan",
+    "answerable": true
+  },
+  {
+    "id": "demak_econ_04",
+    "question": "Berapa persentase penduduk miskin di Kabupaten Demak tahun 2024?",
+    "indicator": "Persentase Penduduk Miskin",
+    "region": "Kabupaten Demak",
+    "reference_year": "2024",
+    "unit": "Persen",
+    "answerable": true
+  },
+  {
+    "id": "demak_soc_01",
+    "question": "Berapa Indeks Pembangunan Manusia (IPM) Kabupaten Demak tahun 2024?",
+    "indicator": "IPM",
+    "region": "Kabupaten Demak",
+    "reference_year": "2024",
+    "unit": "Poin",
+    "answerable": true
+  },
+  {
+    "id": "demak_soc_02",
+    "question": "Berapa Tingkat Pengangguran Terbuka (TPT) Kabupaten Demak tahun 2024?",
+    "indicator": "TPT",
+    "region": "Kabupaten Demak",
+    "reference_year": "2024",
+    "unit": "Persen",
+    "answerable": true
+  },
+  {
+    "id": "demak_inst_01",
+    "question": "Siapa Kepala BPS Kabupaten Demak saat ini?",
+    "indicator": "Profil Kepala BPS",
+    "region": "Kabupaten Demak",
+    "reference_year": "2025",
+    "unit": "Nama Pejabat",
+    "answerable": true
+  },
+  {
+    "id": "demak_geo_01",
+    "question": "Berapa luas wilayah Kecamatan Kebonagung?",
+    "indicator": "Luas Wilayah",
+    "region": "Kebonagung",
+    "reference_year": "2024",
+    "unit": "km2",
+    "answerable": true
+  },
+  {
+    "id": "demak_geo_02",
+    "question": "Berapa jumlah desa di Kecamatan Karangtengah?",
+    "indicator": "Jumlah Desa",
+    "region": "Karangtengah",
+    "reference_year": "2024",
+    "unit": "Desa",
+    "answerable": true
+  },
+  {
+    "id": "demak_geo_03",
+    "question": "Berapa jarak dari Kecamatan Mijen ke ibukota Kabupaten Demak?",
+    "indicator": "Jarak ke Ibukota",
+    "region": "Mijen",
+    "reference_year": "2024",
+    "unit": "km",
+    "answerable": true
+  },
+  {
+    "id": "demak_health_01",
+    "question": "Berapa jumlah puskesmas di Kecamatan Wonosalam tahun 2024?",
+    "indicator": "Jumlah Puskesmas",
+    "region": "Wonosalam",
+    "reference_year": "2024",
+    "unit": "Unit",
+    "answerable": true
+  },
+  {
+    "id": "demak_edu_01",
+    "question": "Berapa jumlah sekolah dasar (SD) di Kecamatan Karanganyar tahun 2024?",
+    "indicator": "Jumlah SD",
+    "region": "Karanganyar",
+    "reference_year": "2024",
+    "unit": "Sekolah",
+    "answerable": true
+  },
+  {
+    "id": "demak_unans_01",
+    "question": "Berapa produksi kelapa sawit di Kecamatan Menteng Jakarta Pusat tahun 2024?",
+    "indicator": "Kelapa Sawit",
+    "region": "Jakarta",
+    "reference_year": "2024",
+    "unit": "-",
+    "answerable": false
+  },
+  {
+    "id": "demak_unans_02",
+    "question": "Berapa jumlah tambang batu bara di Kabupaten Demak tahun 2025?",
+    "indicator": "Tambang Batu Bara",
+    "region": "Kabupaten Demak",
+    "reference_year": "2025",
+    "unit": "-",
+    "answerable": false
+  },
+  {
+    "id": "demak_unans_03",
+    "question": "Berapa jumlah stasiun MRT bawah tanah di Kecamatan Mranggen?",
+    "indicator": "Stasiun MRT",
+    "region": "Mranggen",
+    "reference_year": "2024",
+    "unit": "-",
+    "answerable": false
+  },
+  {
+    "id": "demak_conv_01",
+    "question": "Halo Sahabat Data, kamu bisa bantu apa saja?",
+    "indicator": "Bantuan",
+    "region": "-",
+    "reference_year": "-",
+    "unit": "-",
+    "answerable": true
+  },
+  {
+    "id": "demak_conv_02",
+    "question": "Terima kasih banyak atas informasinya!",
+    "indicator": "Ucapan Terima Kasih",
+    "region": "-",
+    "reference_year": "-",
+    "unit": "-",
+    "answerable": true
+  }
+]

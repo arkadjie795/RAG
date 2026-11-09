@@ -22,7 +22,6 @@ def is_conversational_or_greeting(text: str) -> bool:
     """
     Detects if a user message is a greeting, small talk, identity inquiry,
     or general conversational discussion that should bypass heavy vector database retrieval.
-    Uses strict whole-word matching to avoid false substring triggers (e.g. 'siap' inside 'siapa').
     """
     clean = text.lower().strip()
     clean_no_punct = re.sub(r"[^\w\s]", " ", clean)
@@ -31,14 +30,16 @@ def is_conversational_or_greeting(text: str) -> bool:
     if not words:
         return True
 
-    # Bot identity inquiries ('siapa kamu', 'siapa anda', etc.) are conversational
-    bot_identity_signals = [
+    # Bot identity & courtesy inquiries
+    conversational_signals = [
         "siapa kamu", "kamu siapa", "kamu apa", "siapa anda",
         "bisa bantu apa", "bisa apa", "kamu bisa apa", "apa yang bisa kamu lakukan",
         "apa kabar", "gimana kabarnya", "perkenalkan", "kenalan",
-        "apa fungsi bps", "apa tugas bps", "apa itu bps", "apa kepanjangan bps"
+        "apa fungsi bps", "apa tugas bps", "apa itu bps", "apa kepanjangan bps",
+        "terima kasih", "makasih", "matur nuwun", "thanks", "thank you",
+        "sama sama", "sama-sama", "kembali"
     ]
-    if any(p in clean for p in bot_identity_signals):
+    if any(p in clean for p in conversational_signals):
         return True
 
     # Real inquiries about people, leaders, institutions, or data MUST go to RAG
@@ -52,11 +53,10 @@ def is_conversational_or_greeting(text: str) -> bool:
     if any(k in clean for k in inquiry_keywords):
         return False
 
-    # Standalone 1-3 word greetings and courtesies
+    # Standalone greetings and courtesies
     single_word_signals = {
         "halo", "hai", "hei", "hi", "hello", "pagi", "siang", "sore", "malam",
-        "assalamualaikum", "terima kasih", "makasih", "thanks", "ok", "oke", "sip",
-        "mantap", "keren", "siap"
+        "assalamualaikum", "ok", "oke", "sip", "mantap", "keren", "siap"
     }
     if words.intersection(single_word_signals) and len(words) <= 3:
         return True
@@ -82,7 +82,6 @@ class BPSChatbot:
         self.session_manager = SessionManager()
         logger.info(f"BPS Chatbot initialized. Provider: '{self.llm.provider}'")
 
-        # Warm up the embedder model in a non-blocking background thread
         if warmup_background:
             threading.Thread(target=self._async_warmup, daemon=True).start()
 
@@ -94,10 +93,13 @@ class BPSChatbot:
 
     def _resolve_followup_query(self, question: str, history: List[Dict[str, str]]) -> str:
         """
-        Resolves conversational follow-up questions (e.g. 'yang di tahun 2023 ada gak ?')
-        into an effective search query using the topic of previous turns.
+        Resolves conversational follow-up questions into an effective search query.
         """
         if not history:
+            return question
+
+        # If question is purely conversational or courtesy, do not rewrite with previous data topics
+        if is_conversational_or_greeting(question):
             return question
 
         last_user_query = ""
@@ -110,7 +112,6 @@ class BPSChatbot:
             return question
 
         ql = question.lower().strip()
-        # Check if the question already has an independent statistical topic
         primary_topics = [
             'daging', 'ternak', 'unggas', 'sapi', 'kambing', 'potong', 'pemotongan', 'rph',
             'ikan', 'perikanan', 'pelelangan', 'tambak', 'nelayan', 'budidaya',
@@ -171,9 +172,7 @@ class BPSChatbot:
         top_k: Optional[int] = None
     ) -> Dict[str, Any]:
         """
-        Processes a user question with intelligent dual-mode routing:
-        - Mode 1: Conversational / Greetings / Smalltalk (Fast, zero vector retrieval overhead)
-        - Mode 2: Statistical Data Query (Fed with RAG vector search & granular table JSONs)
+        Processes a user question with intelligent dual-mode routing.
         """
         question = question.strip()
         if not question:
@@ -226,20 +225,17 @@ class BPSChatbot:
         citations = rag_package["citations"]
         chunks = rag_package["chunks"]
 
-        # Formulate grounded prompt
         prompt = DATA_QUERY_PROMPT_TEMPLATE.format(
             context=context_str,
             chat_history=chat_history_str,
             user_query=question
         )
 
-        # Call LLM
         answer = self.llm.generate(
             prompt=prompt,
             system_prompt=BPS_SYSTEM_PROMPT
         )
 
-        # Record conversation turn into memory
         session.add_user_message(question)
         session.add_assistant_message(answer)
 

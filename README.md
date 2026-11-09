@@ -107,6 +107,14 @@ Untuk dokumentasi arsitektur dan opsi API selengkapnya, lihat [Dokumentasi Chatb
 ## Changelog
 
 ### 2026-11-09
+- **PostgreSQL 15 + pgvector (0.8.1) Migration & Technical Audit Remediation**:
+  - Provisioning database baru `bps_rag3321` pada `10.133.21.24:5433` dengan ekstensi `vector` (pgvector 0.8.1).
+  - Skema PostgreSQL terpadu (`modules/storage/postgres_schema.sql` dan `postgres_migrator.py`) untuk registri publikasi, tabel statistik granular (JSONB), `vector_chunks` (`embedding vector(384)` + HNSW Index + GIN FTS `tsvector`), dan tabel `embedding_cache`.
+  - Refactoring integritas data statistik `table_cleaner.py` & `json_builder.py` dengan skema `StatisticalCell`: menghapus konversi destruktif `-` -> `0` (status `NIL`), melestarikan catatan revisi (`r`) dan footnote (`*`), serta memperbaiki pemformatan desimal Indonesia.
+  - Peningkatan pipeline embedder (`embedder.py`): menghapus pseudo-random hash generator dan mengaktifkan persistent cache berbasis hash di PostgreSQL.
+  - Modul `PostgresVectorStore` (`modules/storage/postgres_store.py`) dan `HybridRetriever` (`modules/retrieval/hybrid_search.py`) menggabungkan pgvector HNSW dan PostgreSQL Full-Text Search via Reciprocal Rank Fusion (RRF).
+  - Integrasi RAG Feeder & Chatbot (`chatbot/rag_feeder.py`, `chatbot/llm_client.py`, `chatbot/bot.py`) dengan fallback model stabil dan deteksi kesopanan/salam kontekstual.
+  - Implementasi Golden Benchmark Dataset (30 pertanyaan riil BPS Demak) di `tests/benchmarks/golden_dataset.json` dan automated test suite dengan 100% kelulusan (18/18 tests passed).
 - **Technical Engineering Audit & Implementation Plan**:
   - Menyelesaikan audit menyeluruh (19 bab analisis independen) terhadap arsitektur RAG, integritas data statistik, performa CPU, vector store fallback, dan konfigurasi multi-provider.
   - Mengidentifikasi temuan kritis (P0): konversi simbol strip `-` ke integer `0` pada `table_cleaner.py`, degradasi senyap pseudo-random hash pada `embedder.py`, dan bottleneck $O(N)$ linear scan pada fallback SQLite.
