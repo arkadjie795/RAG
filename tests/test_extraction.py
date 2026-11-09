@@ -5,7 +5,7 @@ and Indonesian BPS number conversion logic.
 import unittest
 import pandas as pd
 import numpy as np
-from modules.extraction.table_cleaner import TableCleaner
+from modules.extraction.table_cleaner import TableCleaner, ValueStatus
 
 
 class TestTableCleaner(unittest.TestCase):
@@ -27,9 +27,9 @@ class TestTableCleaner(unittest.TestCase):
         self.assertEqual(flattened, expected)
 
     def test_indonesian_numeric_sanitization(self):
-        # Dash to 0
-        self.assertEqual(TableCleaner.sanitize_indonesian_numeric("-"), 0)
-        self.assertEqual(TableCleaner.sanitize_indonesian_numeric("–"), 0)
+        # Dash must NOT be converted to 0; should be None / NIL status
+        self.assertIsNone(TableCleaner.sanitize_indonesian_numeric("-"))
+        self.assertIsNone(TableCleaner.sanitize_indonesian_numeric("–"))
         
         # Missing / NA
         self.assertIsNone(TableCleaner.sanitize_indonesian_numeric("..."))
@@ -55,8 +55,12 @@ class TestTableCleaner(unittest.TestCase):
         self.assertEqual(len(df), 4)
         # Check forward fill on Kecamatan column
         self.assertEqual(df["Kecamatan"].tolist(), ["Mranggen", "Mranggen", "Sayung", "Sayung"])
-        # Check numeric conversions
-        self.assertEqual(df["Jumlah"].tolist(), [15000, 35000, 12000, 0])
+        # Check numeric conversions: row 3 '-' is None, not 0
+        self.assertEqual(df["Jumlah"].iloc[0], 15000)
+        self.assertEqual(df["Jumlah"].iloc[1], 35000)
+        self.assertEqual(df["Jumlah"].iloc[2], 12000)
+        self.assertTrue(pd.isna(df["Jumlah"].iloc[3]))
+        self.assertNotEqual(df["Jumlah"].iloc[3], 0)
 
 
 if __name__ == "__main__":

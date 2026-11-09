@@ -69,9 +69,14 @@ class JSONStructureBuilder:
                 continue
             
             clean_col = self._clean_column_label_for_speech(col)
-            # Format number if numeric
-            if isinstance(val, (int, float)):
+            # Format number if numeric (Indonesian standard: dot for thousands, comma for decimals)
+            if isinstance(val, int):
                 val_formatted = f"{val:,}".replace(",", ".")
+            elif isinstance(val, float):
+                parts = f"{val:,.4f}".split(".")
+                int_part = parts[0].replace(",", ".")
+                dec_part = parts[1].rstrip("0")
+                val_formatted = f"{int_part},{dec_part}" if dec_part else int_part
             else:
                 val_formatted = str(val).strip()
 
