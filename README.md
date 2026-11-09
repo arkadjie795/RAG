@@ -40,9 +40,30 @@ SIPETRA_BASE_URL=https://bpsdemak.com
 
 ---
 
+### 5. Deployment Server via Docker & Docker Compose:
+Sistem telah dilengkapi konfigurasi multi-stage Docker siap pakai untuk deployment server:
+```bash
+# Di server produksi:
+git pull origin main
+./deploy.sh
+# Atau langsung menggunakan docker compose:
+docker compose up -d --build
+```
+* **Port Mapping**: Default port `8001` (dapat diubah via `APP_PORT` di `.env`).
+* **Optimasi Image**: Menggunakan multi-stage build (Node 20 Alpine untuk Vue 3 + Python 3.10 slim dengan wheel PyTorch CPU-only hemat ~2.3 GB).
+* **Single-Port Serving**: FastAPI langsung menyajikan SPA Vue 3 di port yang sama (`/` untuk Portal Publik dan `/admin` untuk Command Center).
+
+---
+
 ## Changelog
 
 ### 2026-11-09
+- **Containerization & Production Server Deployment (Docker & Compose)**:
+  - Multi-stage `Dockerfile`: Stage 1 Node 20 Alpine untuk build frontend Vue 3 + Tailwind CSS, Stage 2 Python 3.10 slim untuk backend FastAPI terpadu.
+  - Optimasi PyTorch CPU-only (`--index-url https://download.pytorch.org/whl/cpu`) menghemat ~2.3 GB ukuran image container.
+  - Penyediaan `docker-compose.yml` dengan mapping port dinamis (`${APP_PORT:-8001}:8000`), persistent volumes (`data_publikasi`, `database`, `logs`), dan injeksi variabel environment PostgreSQL & SIPETRA.
+  - Skrip deployment otomatis `deploy.sh` dengan verifikasi `.env`, pembuatan volume, auto-build, dan inspection status kesehatan container.
+  - Single-port production serving pada `chatbot/api.py` dengan middleware SPA static file fallback untuk Vue Router.
 - **Dual-Portal Web UI/UX & SIPETRA SSO Enterprise Ready**:
   - Pembangunan arsitektur antarmuka terpisah (*Dual-Portal*) berbasis Vue 3.5, Vite 8, Tailwind CSS 3.4 (Strict Light Mode), dan FastAPI.
   - Implementasi Portal Publik (`/` dan `/chat`): Asisten AI Sahabat Data BPS Demak yang ramah masyarakat umum, responsive mobile, tanpa login.

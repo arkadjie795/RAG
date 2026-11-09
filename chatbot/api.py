@@ -115,5 +115,36 @@ try:
     def api_health():
         return {"status": "healthy", "service": "BPS Chatbot RAG Engine"}
 
+    # Mount production Vue 3 static build if frontend/dist/index.html exists
+    import os
+    from fastapi.staticfiles import StaticFiles
+    from fastapi.responses import FileResponse, HTMLResponse
+
+    DIST_INDEX_PATH = "frontend/dist/index.html"
+    DIST_ASSETS_DIR = "frontend/dist/assets"
+
+    if os.path.exists(DIST_INDEX_PATH):
+        if os.path.exists(DIST_ASSETS_DIR):
+            app.mount("/assets", StaticFiles(directory=DIST_ASSETS_DIR), name="assets")
+
+        @app.get("/{full_path:path}", include_in_schema=False)
+        async def serve_spa(full_path: str):
+            if full_path.startswith("api/"):
+                raise HTTPException(status_code=404, detail="Endpoint API tidak ditemukan")
+
+            file_path = os.path.join("frontend/dist", full_path)
+            if full_path and os.path.exists(file_path) and os.path.isfile(file_path):
+                return FileResponse(file_path)
+
+            if os.path.exists(DIST_INDEX_PATH):
+                return FileResponse(
+                    DIST_INDEX_PATH,
+                    headers={"Cache-Control": "no-cache, no-store, must-revalidate", "Pragma": "no-cache", "Expires": "0"}
+                )
+            return HTMLResponse(
+                "<h3>Sahabat Data BPS Frontend Not Found</h3><p>Jalankan build frontend.</p>",
+                status_code=503
+            )
+
 except ImportError:
     app = None

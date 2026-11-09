@@ -1,0 +1,40 @@
+services:
+  rag3321-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rag3321-web:latest
+    container_name: rag3321-web
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8001}:8000"
+    volumes:
+      - ./data_publikasi:/app/data_publikasi
+      - ./database:/app/database
+      - ./logs:/app/logs
+    environment:
+      - TZ=Asia/Jakarta
+      # Database PostgreSQL + pgvector
+      - DB_CONNECTION=${DB_CONNECTION:-pgsql}
+      - DB_HOST=${DB_HOST:-10.133.21.24}
+      - DB_PORT=${DB_PORT:-5433}
+      - DB_DATABASE=${DB_DATABASE:-bps_rag3321}
+      - DB_USERNAME=${DB_USERNAME:-bpsdemak}
+      - DB_PASSWORD=${DB_PASSWORD:-demak3321}
+      - DB_TIMEOUT=${DB_TIMEOUT:-10}
+      # AI Model Provider
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-3.5-flash}
+      # SIPETRA SSO (BPS Demak OAuth2)
+      - SIPETRA_CLIENT_ID=${SIPETRA_CLIENT_ID:-}
+      - SIPETRA_CLIENT_SECRET=${SIPETRA_CLIENT_SECRET:-}
+      - SIPETRA_REDIRECT_URI=${SIPETRA_REDIRECT_URI:-http://localhost:8000/api/auth/sipetra/callback}
+      - SIPETRA_BASE_URL=${SIPETRA_BASE_URL:-https://bpsdemak.com}
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET:-supersecret_jwt_bps_demak_3321}
+      # Retrieval & RAG Parameters
+      - TOP_K_CHUNKS=${TOP_K_CHUNKS:-4}
+      - SCORE_THRESHOLD=${SCORE_THRESHOLD:-0.30}
+      - MAX_TABLE_ROWS_IN_CONTEXT=${MAX_TABLE_ROWS_IN_CONTEXT:-20}
+      - DEFAULT_REGION=${DEFAULT_REGION:-Kabupaten Demak}

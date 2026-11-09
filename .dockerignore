@@ -1,0 +1,34 @@
+# Git & Repo
+.git
+.github
+.agents
+.superpowers
+
+# Python Virtualenv & Cache
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+*.so
+.pytest_cache
+
+# Node & Frontend
+node_modules
+frontend/node_modules
+frontend/dist
+.vite
+
+# Local secrets & environment
+.env
+
+# Large datasets & database files (mounted via volume)
+data_publikasi
+database
+logs/*.log
+
+# OS & IDE
+.vscode
+.idea
+.DS_Store
+Thumbs.db
