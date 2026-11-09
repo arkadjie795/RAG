@@ -73,3 +73,8 @@ class DemakEntityExtractor:
             "kategori": kategori_hint,
             "daerah": matched_kec or "Kabupaten Demak"
         }
+
+
+# Official list of 14 Kecamatan in Kabupaten Demak
+DEMAK_KECAMATAN: List[str] = sorted(list(set(DemakEntityExtractor.KECAMATAN_MAP.values())))
+

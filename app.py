@@ -13,7 +13,14 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import streamlit as st
 from chatbot.bot import BPSChatbot
-from modules.retrieval.entity_dictionary import DEMAK_KECAMATAN
+try:
+    from modules.retrieval.entity_dictionary import DEMAK_KECAMATAN
+except ImportError:
+    DEMAK_KECAMATAN = [
+        "Bonang", "Demak", "Dempet", "Gajah", "Guntur", "Karanganyar",
+        "Karangawen", "Karangtengah", "Kebonagung", "Mijen", "Mranggen",
+        "Sayung", "Wedung", "Wonosalam"
+    ]
 
 # Page Configuration
 st.set_page_config(
