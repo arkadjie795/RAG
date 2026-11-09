@@ -41,7 +41,7 @@ class LLMClient:
         """Calls Google Gemini REST API with automatic resilient fallback."""
         primary_model = bot_config.GEMINI_MODEL
         candidates_to_try = [primary_model]
-        for backup in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]:
+        for backup in ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.8-flash"]:
             if backup not in candidates_to_try:
                 candidates_to_try.append(backup)
 
@@ -75,7 +75,7 @@ class LLMClient:
 
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             try:
-                resp = self.client.post(url, headers=headers, json=payload)
+                resp = self.client.post(url, headers=headers, params={"key": api_key}, json=payload)
                 if resp.status_code == 200:
                     data = resp.json()
                     candidates = data.get("candidates", [])

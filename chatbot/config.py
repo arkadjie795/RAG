@@ -17,7 +17,7 @@ class ChatbotConfig(BaseSettings):
     GROQ_API_KEY: Optional[str] = None
     
     # Model Names
-    GEMINI_MODEL: str = "gemini-2.5-flash"
+    GEMINI_MODEL: str = "gemini-3.5-flash"
     OPENAI_MODEL: str = "gpt-4o-mini"
     GROQ_MODEL: str = "llama-3.1-8b-instant"
     OLLAMA_MODEL: str = "llama3"
