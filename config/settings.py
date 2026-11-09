@@ -7,6 +7,15 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    # PostgreSQL & pgvector Database Configuration
+    DB_CONNECTION: str = "pgsql"
+    DB_HOST: str = "10.133.21.24"
+    DB_PORT: int = 5433
+    DB_DATABASE: str = "bps_rag3321"
+    DB_USERNAME: str = "bpsdemak"
+    DB_PASSWORD: str = "demak3321"
+    DB_TIMEOUT: int = 10
+
     # Base paths
     PROJECT_ROOT: Path = Path(__file__).resolve().parent.parent
     DATA_DIR: Path = PROJECT_ROOT / "data_publikasi"
