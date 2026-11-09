@@ -112,6 +112,7 @@ def sipetra_redirect(client_redirect: Optional[str] = None):
 
 
 @router.get("/sipetra/callback")
+@router.get("/callback")
 def sipetra_callback(
     code: Optional[str] = None,
     state: Optional[str] = None,
@@ -122,11 +123,10 @@ def sipetra_callback(
     Exchanges code for access token, fetches employee profile, and redirects to frontend.
     """
     if error or not code:
-        frontend_error_url = "http://localhost:5173/admin/login?error=sso_cancelled"
-        return RedirectResponse(url=frontend_error_url)
+        return RedirectResponse(url="/admin/login?error=sso_cancelled")
 
     try:
-        # 1. Exchange code for access token
+        # 1. Exchange code for access token using form-urlencoded (RFC 6749 compliant)
         token_url = f"{SIPETRA_BASE_URL}/oauth/token"
         token_payload = {
             "grant_type": "authorization_code",
@@ -136,13 +136,17 @@ def sipetra_callback(
             "code": code
         }
         with httpx.Client(timeout=15.0) as client:
-            token_resp = client.post(token_url, json=token_payload)
+            token_resp = client.post(
+                token_url,
+                data=token_payload,
+                headers={"Accept": "application/json"}
+            )
             token_data = token_resp.json()
             access_token = token_data.get("access_token")
 
             if not access_token:
-                frontend_err = f"http://localhost:5173/admin/login?error=token_exchange_failed"
-                return RedirectResponse(url=frontend_err)
+                error_msg = token_data.get("error_description") or token_data.get("error") or "token_exchange_failed"
+                return RedirectResponse(url=f"/admin/login?error={urllib.parse.quote(error_msg)}")
 
             # 2. Fetch user profile from SIPETRA API
             user_url = f"{SIPETRA_BASE_URL}/api/user"
@@ -165,13 +169,12 @@ def sipetra_callback(
         }
         session_token = create_token(local_user)
 
-        # 4. Redirect to Frontend Admin Dashboard
-        frontend_dest = f"http://localhost:5173/admin/ingestion?token={session_token}"
+        # 4. Redirect to Frontend Admin Dashboard (relative URL)
+        frontend_dest = f"/admin/ingestion?token={session_token}"
         return RedirectResponse(url=frontend_dest)
 
     except Exception as ex:
-        err_url = f"http://localhost:5173/admin/login?error=sso_exception"
-        return RedirectResponse(url=err_url)
+        return RedirectResponse(url=f"/admin/login?error={urllib.parse.quote(str(ex))}")
 
 
 @router.post("/logout")

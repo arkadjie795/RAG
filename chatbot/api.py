@@ -92,6 +92,16 @@ try:
     app.include_router(data_viewer_router)
     app.include_router(system_telemetry_router)
 
+    # Top-level callback alias for SIPETRA OAuth2 (/auth/callback)
+    @app.get("/auth/callback")
+    def top_level_auth_callback(
+        code: Optional[str] = None,
+        state: Optional[str] = None,
+        error: Optional[str] = None
+    ):
+        from api.routers.auth import sipetra_callback
+        return sipetra_callback(code=code, state=state, error=error)
+
     class ChatRequest(BaseModel):
         message: str
         session_id: Optional[str] = "default"
