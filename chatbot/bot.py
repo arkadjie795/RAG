@@ -181,7 +181,9 @@ class BPSChatbot:
                 "answer": "Halo! Ada yang bisa saya bantu terkait informasi dan data statistik Kabupaten Demak?",
                 "citations": [],
                 "chunks": [],
-                "session_id": session_id
+                "session_id": session_id,
+                "mode": "conversational",
+                "type": "conversational"
             }
 
         session = self.session_manager.get_or_create(session_id)
@@ -205,7 +207,8 @@ class BPSChatbot:
                 "chunks": [],
                 "context_fed": "",
                 "session_id": session_id,
-                "mode": "conversational"
+                "mode": "conversational",
+                "type": "conversational"
             }
 
         # Mode 2: Statistical Data Inquiry -> Feed data from RAG pipeline
@@ -246,7 +249,8 @@ class BPSChatbot:
             "chunks": chunks,
             "context_fed": context_str,
             "session_id": session_id,
-            "mode": "rag_data"
+            "mode": "rag_data",
+            "type": "rag_data"
         }
 
     def clear_memory(self, session_id: str = "default") -> None:

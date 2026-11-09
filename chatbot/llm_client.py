@@ -41,7 +41,7 @@ class LLMClient:
         """Calls Google Gemini REST API with automatic resilient fallback."""
         primary_model = bot_config.GEMINI_MODEL
         candidates_to_try = [primary_model]
-        for backup in ["gemini-2.5-flash", "gemini-3.7-flash", "gemini-3-flash-preview"]:
+        for backup in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]:
             if backup not in candidates_to_try:
                 candidates_to_try.append(backup)
 
@@ -50,27 +50,29 @@ class LLMClient:
             "x-goog-api-key": api_key
         }
 
-        payload = {
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{"text": prompt}]
-                }
-            ],
-            "systemInstruction": {
-                "parts": [{"text": system_prompt}]
-            },
-            "generationConfig": {
-                "temperature": bot_config.TEMPERATURE,
-                "maxOutputTokens": bot_config.MAX_TOKENS,
-                "thinkingConfig": {
-                    "thinkingBudget": 1024
-                }
-            }
-        }
-
         last_error = None
         for model in candidates_to_try:
+            gen_config = {
+                "temperature": bot_config.TEMPERATURE,
+                "maxOutputTokens": bot_config.MAX_TOKENS
+            }
+            # Only send thinkingConfig if the model specifically targets thinking
+            if "thinking" in model.lower():
+                gen_config["thinkingConfig"] = {"thinkingBudget": 1024}
+
+            payload = {
+                "contents": [
+                    {
+                        "role": "user",
+                        "parts": [{"text": prompt}]
+                    }
+                ],
+                "systemInstruction": {
+                    "parts": [{"text": system_prompt}]
+                },
+                "generationConfig": gen_config
+            }
+
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
             try:
                 resp = self.client.post(url, headers=headers, json=payload)
@@ -99,25 +101,25 @@ class LLMClient:
         return f"[Error Gemini API]: Semua model gagal merespons ({last_error}). Silakan periksa koneksi internet atau kuota API Key Anda."
 
     def _call_openai_compatible(self, prompt: str, system_prompt: str) -> str:
-        """Calls OpenAI, Groq, Ollama, or custom OpenAI-compatible endpoint."""
-        provider = self.provider
-
-        if provider == "groq":
-            base_url = "https://api.groq.com/openai/v1/chat/completions"
-            api_key = bot_config.GROQ_API_KEY or os.getenv("GROQ_API_KEY", "")
+        """Invokes OpenAI, Groq, or Ollama via standard chat completions format."""
+        if self.provider == "openai":
+            base_url = bot_config.OPENAI_BASE_URL or "https://api.openai.com/v1"
+            api_key = bot_config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+            model = bot_config.OPENAI_MODEL
+        elif self.provider == "groq":
+            base_url = "https://api.groq.com/openai/v1"
+            api_key = bot_config.GROQ_API_KEY or os.getenv("GROQ_API_KEY")
             model = bot_config.GROQ_MODEL
-        elif provider == "ollama":
-            base_url = f"{bot_config.OLLAMA_BASE_URL.rstrip('/')}/v1/chat/completions"
+        elif self.provider == "ollama":
+            base_url = f"{bot_config.OLLAMA_BASE_URL}/v1"
             api_key = "ollama"
             model = bot_config.OLLAMA_MODEL
-        else:  # openai
-            base_url = bot_config.OPENAI_BASE_URL or "https://api.openai.com/v1/chat/completions"
-            api_key = bot_config.OPENAI_API_KEY or os.getenv("OPENAI_API_KEY", "")
-            model = bot_config.OPENAI_MODEL
+        else:
+            return self._generate_mock(prompt, system_prompt, reason="Invalid provider mapping")
 
-        if provider != "ollama" and not api_key:
-            logger.warning(f"[LLMClient] No API key found for {provider}. Falling back to Dry-Run/Mock.")
-            return self._generate_mock(prompt, system_prompt, reason=f"{provider.upper()}_API_KEY is not set in .env")
+        if not api_key and self.provider != "ollama":
+            logger.warning(f"[LLMClient] No API key found for provider '{self.provider}'. Falling back to Mock mode.")
+            return self._generate_mock(prompt, system_prompt, reason=f"{self.provider.upper()}_API_KEY is not set.")
 
         headers = {
             "Content-Type": "application/json",
@@ -134,32 +136,28 @@ class LLMClient:
             "max_tokens": bot_config.MAX_TOKENS
         }
 
+        url = f"{base_url.rstrip('/')}/chat/completions"
         try:
-            resp = self.client.post(base_url, headers=headers, json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            choices = data.get("choices", [])
-            if choices:
-                return choices[0].get("message", {}).get("content", "")
-            return f"Maaf, tidak ada respons yang dihasilkan oleh model {provider}."
+            resp = self.client.post(url, headers=headers, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                choices = data.get("choices", [])
+                if choices:
+                    return choices[0].get("message", {}).get("content", "").strip()
+                return "Maaf, tidak ada teks jawaban yang dikembalikan provider."
+            else:
+                logger.error(f"[LLMClient] Provider '{self.provider}' returned HTTP {resp.status_code}: {resp.text}")
+                return f"[Error {self.provider.capitalize()} API]: Terjadi kendala HTTP {resp.status_code} saat mengakses model."
         except Exception as e:
-            logger.error(f"[LLMClient] {provider} API request failed: {e}")
-            return f"[Error {provider.upper()} API]: {e}"
+            logger.error(f"[LLMClient] Request to {self.provider} failed: {e}")
+            return f"[Error Koneksi]: Gagal menghubungi layanan {self.provider.capitalize()} ({e})."
 
     def _generate_mock(self, prompt: str, system_prompt: str, reason: str = "") -> str:
-        """
-        Mock / Dry-run generator when no live LLM API key is configured.
-        Demonstrates that RAG feeding and prompt assembly were successful.
-        """
+        """Returns a deterministic, formatted preview response for verification and tests."""
+        logger.info(f"[LLMClient] Generating simulated response ({reason})")
         return (
-            "🤖 [SIMULASI CHATBOT BPS - MODE DRY-RUN / MOCK]\n"
-            "----------------------------------------------------------------------\n"
-            f"ℹ️  Status: RAG Feeder Berhasil Menyiapkan Konteks ({reason})\n\n"
-            "Data statistik dari database BPS telah berhasil diambil melalui RAG pipeline.\n"
-            "Untuk mengaktifkan respons generasi langsung via kecerdasan buatan, tambahkan salah satu API Key berikut pada file `.env`:\n"
-            "  - GEMINI_API_KEY=your_key_here (Default)\n"
-            "  - OPENAI_API_KEY=your_key_here\n"
-            "  - GROQ_API_KEY=your_key_here\n"
-            "  - Atau jalankan Ollama secara lokal (LLM_PROVIDER=ollama)\n\n"
-            "Cuplikan data statistik BPS yang terhubung untuk pertanyaan Anda siap digunakan oleh LLM."
+            f"[Mode Simulasi / Dry-Run (Alasan: {reason})]\n\n"
+            f"Halo! Saya adalah Sahabat Data BPS Kabupaten Demak. Permintaan Anda telah diterima dan "
+            f"diproses melalui pipeline verifikasi data. Untuk mengaktifkan respon cerdas berbasis AI generatif, "
+            f"silakan konfigurasikan API Key resmi pada berkas `.env`."
         )
