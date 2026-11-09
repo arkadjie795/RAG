@@ -62,13 +62,35 @@ def handle_chat_request(payload: Dict[str, Any]) -> Dict[str, Any]:
 # Optional FastAPI application if installed
 try:
     from fastapi import FastAPI, HTTPException
+    from fastapi.middleware.cors import CORSMiddleware
     from pydantic import BaseModel
 
+    # Import Modular Routers
+    from api.routers.auth import router as auth_router
+    from api.routers.ingestion import router as ingestion_router
+    from api.routers.data_viewer import router as data_viewer_router
+    from api.routers.system_telemetry import router as system_telemetry_router
+
     app = FastAPI(
-        title="BPS Demak AI Chatbot API",
-        description="RAG-fed Intelligent Statistical Assistant for Badan Pusat Statistik",
-        version="1.0.0"
+        title="BPS Demak Command Center & AI Assistant API",
+        description="Unified Enterprise Backend for Sahabat Data BPS Demak (3321)",
+        version="2.0.0"
     )
+
+    # Allow CORS for Frontend development & local serving
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Mount Sub-Routers
+    app.include_router(auth_router)
+    app.include_router(ingestion_router)
+    app.include_router(data_viewer_router)
+    app.include_router(system_telemetry_router)
 
     class ChatRequest(BaseModel):
         message: str

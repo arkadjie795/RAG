@@ -41,7 +41,7 @@ class LLMClient:
         """Calls Google Gemini REST API with automatic resilient fallback."""
         primary_model = bot_config.GEMINI_MODEL
         candidates_to_try = [primary_model]
-        for backup in ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-flash-latest", "gemini-3.8-flash"]:
+        for backup in ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-flash-latest", "gemini-3.8-flash"]:
             if backup not in candidates_to_try:
                 candidates_to_try.append(backup)
 
