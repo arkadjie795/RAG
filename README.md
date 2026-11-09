@@ -63,7 +63,7 @@ python main.py --query "Berapa jumlah penduduk di Kecamatan Mranggen?" --filter-
         │
         ├─────────────────────────────────────────────────┐
         ▼ (Module 5a: Granular JSON Storage)              ▼ (Module 5b: Vector DB)
-[ 1 JSON Per Tabel: database/tables/{doc_id}/ ]     [ ChromaDB / SQLite Vector Store ]
+[ 1 JSON Per Tabel: database/tables/{doc_id}/ ]     [ PostgreSQL 16 + pgvector (0.8.1) HNSW ]
 [ 1 JSON Per PDF  : database/documents/{doc_id}.json ] (Vectors point directly to table JSONs)
 [ 1 JSON Per Teks : database/narratives/{doc_id}/ ]
 ```
@@ -85,28 +85,51 @@ To prevent LLM context-window exhaustion and hallucinations, the pipeline does N
 
 ---
 
-## 🤖 AI Chatbot (RAG-Fed Assistant)
+## 🤖 AI Chatbot (RAG-Fed Assistant & Web GUI)
 
-Sistem ini telah dilengkapi modul AI Chatbot mandiri di dalam folder [`chatbot/`](chatbot/README.md) yang mengonsumsi data dari pipeline RAG secara langsung.
+Sistem ini dilengkapi antarmuka lengkap (Web GUI modern, CLI interaktif, dan REST API) di dalam folder [`chatbot/`](chatbot/README.md) yang mengonsumsi data dari pipeline RAG secara langsung.
 
-### Menjalankan Chatbot:
+### 1. Menjalankan Web GUI Interaktif (Streamlit) — *Sangat Direkomendasikan*
+Antarmuka visual modern bertema BPS dengan panel chat, filter 14 kecamatan/tahun, status koneksi database, dan sitasi dokumen:
 ```bash
-# Jalankan sesi percakapan interaktif di CLI
+streamlit run app.py
+```
+*(Atau dengan environment Python Laragon):*
+```bash
+C:\laragon\bin\python\python-3.10\python.exe -m streamlit run app.py
+```
+Akses di browser: `http://localhost:8501`
+
+### 2. Menjalankan Terminal Interaktif (CLI)
+Sesi percakapan interaktif langsung di command line:
+```bash
 python -m chatbot.cli
 ```
+
+### 3. Menjalankan REST API & Swagger UI (FastAPI)
+Untuk integrasi dengan aplikasi eksternal atau WhatsApp/Telegram bot:
+```bash
+python -m uvicorn chatbot.api:app --reload --port 8000
+```
+Akses dokumentasi interaktif Swagger UI di: `http://127.0.0.1:8000/docs`
 
 ### Konfigurasi API LLM:
 Salin file `.env.example` menjadi `.env`, lalu masukkan API Key (misal: Google Gemini atau OpenAI):
 ```bash
 copy .env.example .env
 ```
-Untuk dokumentasi arsitektur dan opsi API selengkapnya, lihat [Dokumentasi Chatbot](chatbot/README.md).
+Dokumentasi edukasi hasil audit & roadmap untuk tim magang dapat dilihat di:
+- [`docs/LAPORAN_EDUKASI_HASIL_AUDIT_MAGANG.md`](docs/LAPORAN_EDUKASI_HASIL_AUDIT_MAGANG.md)
+- [`docs/RAG3321_ENGINEERING_AUDIT_AND_IMPLEMENTATION_PLAN.md`](docs/RAG3321_ENGINEERING_AUDIT_AND_IMPLEMENTATION_PLAN.md)
 
 ---
 
 ## Changelog
 
 ### 2026-11-09
+- **Interactive Web GUI (Streamlit) & Laporan Edukasi Hasil Audit**:
+  - Pembangunan antarmuka visual modern `app.py` berbasis Streamlit dengan visual branding BPS (Biru & Oranye), percakapan interaktif, filter 14 kecamatan Demak & tahun, indikator status arsitektur PostgreSQL pgvector, serta panel sitasi rujukan resmi.
+  - Penyusunan dokumen edukatif komprehensif [`docs/LAPORAN_EDUKASI_HASIL_AUDIT_MAGANG.md`](docs/LAPORAN_EDUKASI_HASIL_AUDIT_MAGANG.md) untuk tim magang yang merinci 5 pelajaran penting (integritas data `-` vs `0`, bahaya silent failure random hash, migrasi ke pgvector enterprise, format desimal Indonesia, dan RRF hybrid search) serta 5 topik inovasi untuk diskusi pengembangan masa depan.
 - **PostgreSQL 15 + pgvector (0.8.1) Migration & Technical Audit Remediation**:
   - Provisioning database baru `bps_rag3321` pada `10.133.21.24:5433` dengan ekstensi `vector` (pgvector 0.8.1).
   - Skema PostgreSQL terpadu (`modules/storage/postgres_schema.sql` dan `postgres_migrator.py`) untuk registri publikasi, tabel statistik granular (JSONB), `vector_chunks` (`embedding vector(384)` + HNSW Index + GIN FTS `tsvector`), dan tabel `embedding_cache`.
@@ -119,4 +142,3 @@ Untuk dokumentasi arsitektur dan opsi API selengkapnya, lihat [Dokumentasi Chatb
   - Menyelesaikan audit menyeluruh (19 bab analisis independen) terhadap arsitektur RAG, integritas data statistik, performa CPU, vector store fallback, dan konfigurasi multi-provider.
   - Mengidentifikasi temuan kritis (P0): konversi simbol strip `-` ke integer `0` pada `table_cleaner.py`, degradasi senyap pseudo-random hash pada `embedder.py`, dan bottleneck $O(N)$ linear scan pada fallback SQLite.
   - Merumuskan cetak biru arsitektur target: Hybrid Retrieval (Dense + SQLite FTS5 + RRF), Deterministic Numerical Answer Engine, Controlled Parallel Processing, dan spesifikasi implementasi bertahap (Phase 1 P0, Phase 2 P1, Phase 3 P2) di dokumen [`docs/RAG3321_ENGINEERING_AUDIT_AND_IMPLEMENTATION_PLAN.md`](docs/RAG3321_ENGINEERING_AUDIT_AND_IMPLEMENTATION_PLAN.md).
-
