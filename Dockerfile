@@ -13,7 +13,7 @@ RUN npm run build
 # ========================================================
 # Stage 2: Production Python Backend Server
 # ========================================================
-FROM python:3.10-slim
+FROM python:3.11-slim
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV TZ=Asia/Jakarta
