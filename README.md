@@ -90,3 +90,6 @@ docker compose up -d --build
   - Menyelesaikan audit menyeluruh (19 bab analisis independen) terhadap arsitektur RAG, integritas data statistik, performa CPU, vector store fallback, dan konfigurasi multi-provider.
   - Mengidentifikasi temuan kritis (P0): konversi simbol strip `-` ke integer `0` pada `table_cleaner.py`, degradasi senyap pseudo-random hash pada `embedder.py`, dan bottleneck $O(N)$ linear scan pada fallback SQLite.
   - Merumuskan cetak biru arsitektur target: Hybrid Retrieval (Dense + SQLite FTS5 + RRF), Deterministic Numerical Answer Engine, Controlled Parallel Processing, dan spesifikasi implementasi bertahap (Phase 1 P0, Phase 2 P1, Phase 3 P2) di dokumen [`docs/RAG3321_ENGINEERING_AUDIT_AND_IMPLEMENTATION_PLAN.md`](docs/RAG3321_ENGINEERING_AUDIT_AND_IMPLEMENTATION_PLAN.md).
+
+
+  kontributor adjie &  imam
