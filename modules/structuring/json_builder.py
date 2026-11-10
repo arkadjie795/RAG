@@ -6,6 +6,8 @@ context-injected 'RAG-Ready' JSON structures with semantic textual representatio
 import re
 import hashlib
 from typing import Dict, Any, List, Optional
+import numpy as np
+import pandas as pd
 from loguru import logger
 
 
@@ -65,17 +67,20 @@ class JSONStructureBuilder:
 
         for col in cols[metric_start_idx:]:
             val = row_dict[col]
-            if val is None or str(val).strip() == "" or str(val).lower() == "none":
+            if pd.isna(val) or val is None or str(val).strip() == "" or str(val).lower() in ("none", "nan", "null"):
                 continue
-            
+
             clean_col = self._clean_column_label_for_speech(col)
             # Format number if numeric (Indonesian standard: dot for thousands, comma for decimals)
-            if isinstance(val, int):
+            if isinstance(val, (int, np.integer)):
                 val_formatted = f"{val:,}".replace(",", ".")
-            elif isinstance(val, float):
+            elif isinstance(val, (float, np.floating)):
+                import math
+                if math.isnan(val) or math.isinf(val):
+                    continue
                 parts = f"{val:,.4f}".split(".")
                 int_part = parts[0].replace(",", ".")
-                dec_part = parts[1].rstrip("0")
+                dec_part = parts[1].rstrip("0") if len(parts) > 1 else ""
                 val_formatted = f"{int_part},{dec_part}" if dec_part else int_part
             else:
                 val_formatted = str(val).strip()

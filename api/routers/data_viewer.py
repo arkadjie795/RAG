@@ -26,10 +26,10 @@ def get_publications_list(
                 params: List[Any] = []
 
                 if tahun:
-                    where_clauses.append("tahun = %s")
-                    params.append(tahun)
+                    where_clauses.append("release_date ILIKE %s")
+                    params.append(f"%{tahun}%")
                 if kategori:
-                    where_clauses.append("kategori ILIKE %s")
+                    where_clauses.append("category ILIKE %s")
                     params.append(f"%{kategori}%")
 
                 where_sql = " AND ".join(where_clauses)
@@ -40,10 +40,11 @@ def get_publications_list(
 
                 # Items query
                 query = f"""
-                    SELECT doc_id, judul, tahun, kategori, daerah, total_tabel, file_path, created_at
+                    SELECT publication_id, title, release_date, category, 'Kabupaten Demak' AS daerah,
+                           total_tables_extracted, local_file_path, created_at
                     FROM publications
                     WHERE {where_sql}
-                    ORDER BY tahun DESC, created_at DESC
+                    ORDER BY release_date DESC, created_at DESC
                     LIMIT %s OFFSET %s
                 """
                 cur.execute(query, tuple(params + [limit, offset]))
@@ -95,17 +96,14 @@ def get_statistical_tables(
                 params: List[Any] = []
 
                 if search:
-                    where_clauses.append("(judul_tabel ILIKE %s OR representasi_teks ILIKE %s)")
-                    params.extend([f"%{search}%", f"%{search}%"])
+                    where_clauses.append("(table_title ILIKE %s)")
+                    params.append(f"%{search}%")
                 if kecamatan and kecamatan.lower() != "semua":
-                    where_clauses.append("daerah ILIKE %s")
+                    where_clauses.append("kecamatan ILIKE %s")
                     params.append(f"%{kecamatan}%")
                 if tahun and tahun.lower() != "semua":
                     where_clauses.append("tahun = %s")
                     params.append(tahun)
-                if kategori and kategori.lower() != "semua":
-                    where_clauses.append("kategori ILIKE %s")
-                    params.append(f"%{kategori}%")
 
                 where_sql = " AND ".join(where_clauses)
 
@@ -113,8 +111,9 @@ def get_statistical_tables(
                 total = cur.fetchone()[0]
 
                 query = f"""
-                    SELECT table_id, doc_id, judul_tabel, halaman, tahun, kategori, daerah,
-                           row_count, column_count, satuan, sumber, created_at
+                    SELECT table_id, doc_id, table_title, halaman, tahun, 'Statistik' AS kategori, kecamatan,
+                           jsonb_array_length(records) AS row_count, jsonb_array_length(kolom) AS column_count,
+                           satuan, sumber, created_at
                     FROM statistical_tables
                     WHERE {where_sql}
                     ORDER BY tahun DESC, created_at DESC
@@ -163,9 +162,9 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT table_id, doc_id, judul_tabel, halaman, tahun, kategori, daerah,
-                           row_count, column_count, headers, raw_data, representasi_teks,
-                           satuan, sumber, catatan, created_at
+                    SELECT table_id, doc_id, table_title, halaman, tahun, 'Statistik' AS kategori, kecamatan,
+                           jsonb_array_length(records) AS row_count, jsonb_array_length(kolom) AS column_count,
+                           kolom, records, satuan, sumber, catatan, created_at
                     FROM statistical_tables
                     WHERE table_id = %s
                     """,
@@ -192,11 +191,11 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
                         "column_count": row[8],
                         "headers": headers_json,
                         "rows": raw_data_json,
-                        "representasi_teks": row[11],
-                        "satuan": row[12],
-                        "sumber": row[13],
-                        "catatan": row[14],
-                        "created_at": row[15].isoformat() if row[15] else None
+                        "representasi_teks": "",
+                        "satuan": row[11],
+                        "sumber": row[12],
+                        "catatan": row[13],
+                        "created_at": row[14].isoformat() if row[14] else None
                     }
                 }
     except HTTPException:

@@ -36,11 +36,18 @@ class BPSTableExtractor:
         page_width = page.width
 
         # 1. Look for Table Title above the table (top region: y in [0, top])
-        above_crop = page.crop((0, max(0, top - 120), page_width, top))
-        above_text = above_crop.extract_text(layout=False) or ""
-
         table_title = "Tabel Statistik"
         unit = "N/A"
+        above_text = ""
+
+        crop_top_y0 = max(0.0, float(top) - 120.0)
+        crop_top_y1 = max(0.0, float(top))
+        if crop_top_y1 > crop_top_y0:
+            try:
+                above_crop = page.crop((0, crop_top_y0, page_width, crop_top_y1))
+                above_text = above_crop.extract_text(layout=False) or ""
+            except Exception as e:
+                logger.debug(f"Above table crop skipped: {e}")
 
         # Regex to capture BPS table naming pattern (e.g., "Tabel 3.1.1 Jumlah Penduduk...")
         title_match = re.search(
@@ -62,8 +69,15 @@ class BPSTableExtractor:
             unit = (unit_match.group(1) or unit_match.group(2) or "").strip()
 
         # 2. Look for Source / Notes below the table (bottom region: y in [bottom, bottom + 80])
-        below_crop = page.crop((0, bottom, page_width, min(page_height, bottom + 90)))
-        below_text = below_crop.extract_text(layout=False) or ""
+        below_text = ""
+        crop_bot_y0 = min(float(page_height), max(0.0, float(bottom)))
+        crop_bot_y1 = min(float(page_height), max(0.0, float(bottom) + 90.0))
+        if crop_bot_y1 > crop_bot_y0:
+            try:
+                below_crop = page.crop((0, crop_bot_y0, page_width, crop_bot_y1))
+                below_text = below_crop.extract_text(layout=False) or ""
+            except Exception as e:
+                logger.debug(f"Below table crop skipped: {e}")
 
         source = "BPS"
         notes = ""
@@ -138,32 +152,36 @@ class BPSTableExtractor:
                         )
 
                     for t_idx, tbl in enumerate(found_tables):
-                        raw_matrix = tbl.extract()
-                        if not raw_matrix or len(raw_matrix) < 2:
+                        try:
+                            raw_matrix = tbl.extract()
+                            if not raw_matrix or len(raw_matrix) < 2:
+                                continue
+
+                            # Clean and transform
+                            cleaned_df = self.cleaner.clean_table_dataframe(raw_matrix)
+                            if cleaned_df is None or cleaned_df.empty or len(cleaned_df.columns) < 2:
+                                continue
+
+                            # Extract context around bounding box
+                            context = self._extract_table_context(page, tbl.bbox)
+
+                            table_obj = {
+                                "tabel_id": f"p{page_num}_t{t_idx + 1}",
+                                "halaman": page_num,
+                                "judul_tabel": context["judul_tabel"],
+                                "satuan": context["satuan"],
+                                "sumber": context["sumber"],
+                                "catatan": context["catatan"],
+                                "kolom": list(cleaned_df.columns),
+                                "jumlah_baris": len(cleaned_df),
+                                "dataframe": cleaned_df,
+                                "records": cleaned_df.to_dict(orient="records"),
+                                "bbox": tbl.bbox
+                            }
+                            extracted_tables.append(table_obj)
+                        except Exception as tbl_err:
+                            logger.debug(f"Failed to extract table {t_idx} on page {page_num}: {tbl_err}")
                             continue
-
-                        # Clean and transform
-                        cleaned_df = self.cleaner.clean_table_dataframe(raw_matrix)
-                        if cleaned_df is None or cleaned_df.empty or len(cleaned_df.columns) < 2:
-                            continue
-
-                        # Extract context around bounding box
-                        context = self._extract_table_context(page, tbl.bbox)
-
-                        table_obj = {
-                            "tabel_id": f"p{page_num}_t{t_idx + 1}",
-                            "halaman": page_num,
-                            "judul_tabel": context["judul_tabel"],
-                            "satuan": context["satuan"],
-                            "sumber": context["sumber"],
-                            "catatan": context["catatan"],
-                            "kolom": list(cleaned_df.columns),
-                            "jumlah_baris": len(cleaned_df),
-                            "dataframe": cleaned_df,
-                            "records": cleaned_df.to_dict(orient="records"),
-                            "bbox": tbl.bbox
-                        }
-                        extracted_tables.append(table_obj)
 
             logger.info(f"Successfully extracted {len(extracted_tables)} tables from {pdf_path.name}")
 

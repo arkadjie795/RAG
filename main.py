@@ -123,8 +123,11 @@ class BPSPipelineOrchestrator:
             extracted_doc=extracted_doc
         )
 
-        # 4b. Vector DB (ChromaDB / SQLite Vector Store with metadata payloads)
+        # 4b. Vector DB (ChromaDB / PostgreSQL Vector Store with metadata payloads)
         self.vector_store.upsert_chunks(embedded_chunks)
+
+        # 4c. PostgreSQL Relational Store (Publications & Statistical Tables)
+        self._save_to_postgres(pub_id, extracted_doc, pdf_path, embedded_chunks)
 
         # Step 5: Update Registry State
         self.registry.mark_extraction_completed(
@@ -145,6 +148,113 @@ class BPSPipelineOrchestrator:
             "total_chunks": len(embedded_chunks),
             "sample_chunk": rag_chunks[0]["representasi_teks"] if rag_chunks else ""
         }
+
+    def _save_to_postgres(
+        self,
+        pub_id: str,
+        extracted_doc: Dict[str, Any],
+        pdf_path: Path,
+        embedded_chunks: List[Dict[str, Any]]
+    ) -> None:
+        """Stores publication metadata and granular statistical tables into PostgreSQL bps_rag3321."""
+        if getattr(settings, "DB_CONNECTION", "").lower() not in ("pgsql", "postgres", "postgresql"):
+            return
+        try:
+            import json
+            from config.database import get_db_connection
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    # 1. Upsert publication
+                    cur.execute(
+                        """
+                        INSERT INTO publications (
+                            publication_id, title, release_date, category, local_file_path,
+                            file_size_bytes, download_status, extraction_status,
+                            total_tables_extracted, total_chunks_indexed, updated_at
+                        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                        ON CONFLICT (publication_id) DO UPDATE SET
+                            title = EXCLUDED.title,
+                            release_date = EXCLUDED.release_date,
+                            category = EXCLUDED.category,
+                            local_file_path = EXCLUDED.local_file_path,
+                            file_size_bytes = EXCLUDED.file_size_bytes,
+                            download_status = EXCLUDED.download_status,
+                            extraction_status = EXCLUDED.extraction_status,
+                            total_tables_extracted = EXCLUDED.total_tables_extracted,
+                            total_chunks_indexed = EXCLUDED.total_chunks_indexed,
+                            updated_at = NOW();
+                        """,
+                        (
+                            pub_id,
+                            extracted_doc.get("dokumen_sumber", pdf_path.stem),
+                            extracted_doc.get("tanggal_publikasi", "2026-01-01"),
+                            extracted_doc.get("kategori", "Statistik Umum"),
+                            str(pdf_path),
+                            pdf_path.stat().st_size if pdf_path.exists() else 0,
+                            "DOWNLOADED",
+                            "PROCESSED",
+                            extracted_doc.get("total_tabel", 0),
+                            len(embedded_chunks)
+                        )
+                    )
+
+                    def clean_json_obj(item):
+                        import math
+                        if isinstance(item, float):
+                            if math.isnan(item) or math.isinf(item):
+                                return None
+                            return item
+                        if isinstance(item, dict):
+                            return {str(k): clean_json_obj(v) for k, v in item.items()}
+                        if isinstance(item, list):
+                            return [clean_json_obj(x) for x in item]
+                        return item
+
+                    # 2. Upsert each statistical table
+                    for tbl in extracted_doc.get("tabel_list", []):
+                        raw_t_id = tbl.get("tabel_id", "t1")
+                        table_pk = f"{pub_id}_{raw_t_id}"
+                        clean_records = clean_json_obj(tbl.get("records", []))
+                        clean_kolom = clean_json_obj(tbl.get("kolom", []))
+
+                        cur.execute(
+                            """
+                            INSERT INTO statistical_tables (
+                                table_id, doc_id, doc_title, table_number, table_title,
+                                halaman, kecamatan, tahun, satuan, sumber, catatan, kolom, records
+                            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s::jsonb, %s::jsonb)
+                            ON CONFLICT (table_id) DO UPDATE SET
+                                doc_title = EXCLUDED.doc_title,
+                                table_title = EXCLUDED.table_title,
+                                halaman = EXCLUDED.halaman,
+                                kecamatan = EXCLUDED.kecamatan,
+                                tahun = EXCLUDED.tahun,
+                                satuan = EXCLUDED.satuan,
+                                sumber = EXCLUDED.sumber,
+                                catatan = EXCLUDED.catatan,
+                                kolom = EXCLUDED.kolom,
+                                records = EXCLUDED.records;
+                            """,
+                            (
+                                table_pk,
+                                pub_id,
+                                extracted_doc.get("dokumen_sumber", ""),
+                                raw_t_id,
+                                tbl.get("judul_tabel", "Tabel Statistik"),
+                                tbl.get("halaman", 1),
+                                extracted_doc.get("daerah", "Kabupaten Demak"),
+                                str(extracted_doc.get("tahun", "2026")),
+                                tbl.get("satuan", "N/A"),
+                                tbl.get("sumber", "BPS Kabupaten Demak"),
+                                tbl.get("catatan", ""),
+                                json.dumps(clean_kolom, ensure_ascii=False),
+                                json.dumps(clean_records, ensure_ascii=False)
+                            )
+                        )
+                    conn.commit()
+            logger.info(f"[PostgreSQL] Successfully saved [{pub_id}] and {len(extracted_doc.get('tabel_list', []))} tables.")
+        except Exception as e:
+            logger.warning(f"[PostgreSQL] Failed to save publication/tables to database: {e}")
 
     # =========================================================================
     # OPERATIONAL MODES
