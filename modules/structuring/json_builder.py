@@ -4,6 +4,7 @@ Converts extracted statistical tables and narrative paragraphs into enriched,
 context-injected 'RAG-Ready' JSON structures with semantic textual representations.
 """
 import re
+import math
 import hashlib
 from typing import Dict, Any, List, Optional
 import numpy as np
@@ -75,7 +76,6 @@ class JSONStructureBuilder:
             if isinstance(val, (int, np.integer)):
                 val_formatted = f"{val:,}".replace(",", ".")
             elif isinstance(val, (float, np.floating)):
-                import math
                 if math.isnan(val) or math.isinf(val):
                     continue
                 parts = f"{val:,.4f}".split(".")

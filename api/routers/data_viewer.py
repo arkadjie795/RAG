@@ -38,10 +38,9 @@ def get_publications_list(
                 cur.execute(f"SELECT COUNT(*) FROM publications WHERE {where_sql}", tuple(params))
                 total = cur.fetchone()[0]
 
-                # Items query
+                # Items query matching PostgreSQL schema
                 query = f"""
-                    SELECT publication_id, title, release_date, category, 'Kabupaten Demak' AS daerah,
-                           total_tables_extracted, local_file_path, created_at
+                    SELECT publication_id, title, release_date, category, total_tables_extracted, local_file_path, created_at
                     FROM publications
                     WHERE {where_sql}
                     ORDER BY release_date DESC, created_at DESC
@@ -57,10 +56,10 @@ def get_publications_list(
                         "judul": r[1],
                         "tahun": r[2],
                         "kategori": r[3],
-                        "daerah": r[4],
-                        "total_tabel": r[5] or 0,
-                        "file_path": r[6] or "",
-                        "created_at": r[7].isoformat() if r[7] else None
+                        "daerah": "Kabupaten Demak",
+                        "total_tabel": r[4] or 0,
+                        "file_path": r[5] or "",
+                        "created_at": r[6].isoformat() if r[6] else None
                     })
 
                 return {
@@ -96,14 +95,17 @@ def get_statistical_tables(
                 params: List[Any] = []
 
                 if search:
-                    where_clauses.append("(table_title ILIKE %s)")
-                    params.append(f"%{search}%")
+                    where_clauses.append("(table_title ILIKE %s OR catatan ILIKE %s)")
+                    params.extend([f"%{search}%", f"%{search}%"])
                 if kecamatan and kecamatan.lower() != "semua":
                     where_clauses.append("kecamatan ILIKE %s")
                     params.append(f"%{kecamatan}%")
                 if tahun and tahun.lower() != "semua":
                     where_clauses.append("tahun = %s")
                     params.append(tahun)
+                if kategori and kategori.lower() != "semua":
+                    where_clauses.append("doc_title ILIKE %s")
+                    params.append(f"%{kategori}%")
 
                 where_sql = " AND ".join(where_clauses)
 
@@ -111,7 +113,7 @@ def get_statistical_tables(
                 total = cur.fetchone()[0]
 
                 query = f"""
-                    SELECT table_id, doc_id, table_title, halaman, tahun, 'Statistik' AS kategori, kecamatan,
+                    SELECT table_id, doc_id, table_title, halaman, tahun, 'Umum' AS kategori, kecamatan AS daerah,
                            jsonb_array_length(records) AS row_count, jsonb_array_length(kolom) AS column_count,
                            satuan, sumber, created_at
                     FROM statistical_tables
@@ -162,7 +164,7 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    SELECT table_id, doc_id, table_title, halaman, tahun, 'Statistik' AS kategori, kecamatan,
+                    SELECT table_id, doc_id, table_title, halaman, tahun, 'Umum' AS kategori, kecamatan AS daerah,
                            jsonb_array_length(records) AS row_count, jsonb_array_length(kolom) AS column_count,
                            kolom, records, satuan, sumber, catatan, created_at
                     FROM statistical_tables

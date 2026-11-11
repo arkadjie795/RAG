@@ -102,32 +102,37 @@ job_manager = IngestionJobState()
 
 
 def _run_crawler_task(mode: str, max_pages: int, pdf_path: Optional[str]):
-    """Background task simulating/invoking master orchestrator pipeline safely."""
+    """Background task invoking master orchestrator pipeline safely."""
     try:
-        job_manager.update("1. Memeriksa portal BPS & registri deduplikasi PostgreSQL...", 15)
-        time.sleep(1.0)
+        job_manager.update("1. Memeriksa portal BPS & registri deduplikasi...", 10)
+        from pathlib import Path
+        from main import BPSPipelineOrchestrator
+
+        orchestrator = BPSPipelineOrchestrator()
+        job_manager.update(f"2. Menginisialisasi pipeline (Mode: {mode.upper()})...", 25)
+
         if job_manager.cancel_requested:
             job_manager.finish(success=False, err="Dibatalkan oleh admin")
             return
 
-        job_manager.update("2. Mengunduh katalog publikasi terbaru Kabupaten Demak...", 35, processed=1, total=5)
-        time.sleep(1.2)
-        if job_manager.cancel_requested:
-            job_manager.finish(success=False, err="Dibatalkan oleh admin")
-            return
+        if mode == "statis":
+            job_manager.update(f"3. Menjalankan crawler katalog (maksimal {max_pages} halaman)...", 45)
+            orchestrator.run_mode_statis(max_pages=max_pages)
+        elif mode == "all":
+            job_manager.update(f"3. Menjalankan crawler katalog historis ({max_pages} halaman)...", 45)
+            orchestrator.run_mode_all(max_pages=max_pages)
+        elif mode == "pdf" and pdf_path:
+            target_path = Path(pdf_path)
+            if not target_path.exists():
+                job_manager.finish(success=False, err=f"File PDF tidak ditemukan: {pdf_path}")
+                return
+            job_manager.update(f"3. Mengekstrak dan mengindeks {target_path.name}...", 50)
+            orchestrator.run_mode_single_pdf(target_path)
+        else:
+            job_manager.update("3. Menjalankan proses pipeline standar...", 50)
+            orchestrator.run_mode_statis(max_pages=max_pages)
 
-        job_manager.update("3. Mengekstrak tabel statistik (pdfplumber) & sanitasi nilai...", 60, processed=3, total=5)
-        time.sleep(1.5)
-        if job_manager.cancel_requested:
-            job_manager.finish(success=False, err="Dibatalkan oleh admin")
-            return
-
-        job_manager.update("4. Membentuk representasi semantik & embedding pgvector...", 85, processed=5, total=5)
-        time.sleep(1.2)
-
-        job_manager.update("5. Menyimpan ke database terpadu bps_rag3321 (PostgreSQL)...", 95)
-        time.sleep(0.8)
-
+        job_manager.update("4. Memfinalisasi indeks vektor dan tabel PostgreSQL...", 90)
         job_manager.finish(success=True)
     except Exception as ex:
         logger.error(f"[IngestionRouter] Error executing crawl task: {ex}")

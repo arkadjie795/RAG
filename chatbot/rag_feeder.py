@@ -178,8 +178,14 @@ class RAGFeeder:
 
         for res in results:
             score = res.get("score")
-            if score is not None and score < threshold:
-                continue
+            # In PostgreSQL Hybrid Retrieval, score is RRF (Reciprocal Rank Fusion, ~0.005 - 0.033).
+            # Only apply cosine threshold (e.g. >= 0.30) if using local vector store fallback.
+            if self.hybrid_retriever is not None:
+                if score is not None and score < 0.001:
+                    continue
+            else:
+                if score is not None and score < threshold:
+                    continue
 
             meta = res.get("metadata", {})
             tipe_konten = meta.get("tipe_konten", "teks")
