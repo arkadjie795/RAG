@@ -39,13 +39,14 @@
 
         <!-- Filter Kecamatan -->
         <div>
-          <label class="block text-[11px] font-bold text-slate-600 mb-1">Kecamatan:</label>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Wilayah / Kecamatan:</label>
           <select
             v-model="filterKecamatan"
             @change="fetchData"
             class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
           >
-            <option value="">Semua Kecamatan</option>
+            <option value="">Semua Wilayah</option>
+            <option value="Kabupaten Demak">Kabupaten Demak (Level Kabupaten)</option>
             <option v-for="kec in KECAMATAN_LIST" :key="kec" :value="kec">{{ kec }}</option>
           </select>
         </div>
@@ -59,6 +60,7 @@
             class="w-full text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
           >
             <option value="">Semua Tahun</option>
+            <option value="2026">2026</option>
             <option value="2025">2025</option>
             <option value="2024">2024</option>
             <option value="2023">2023</option>

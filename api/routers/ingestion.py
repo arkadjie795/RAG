@@ -127,7 +127,10 @@ def _run_crawler_task(mode: str, max_pages: int, pdf_path: Optional[str]):
                 job_manager.finish(success=False, err=f"File PDF tidak ditemukan: {pdf_path}")
                 return
             job_manager.update(f"3. Mengekstrak dan mengindeks {target_path.name}...", 50)
-            orchestrator.run_mode_single_pdf(target_path)
+            orchestrator.process_single_pdf(target_path)
+        elif mode in ("test", "single"):
+            job_manager.update("3. Menjalankan uji ekstraksi dan indexing single dokumen...", 50)
+            orchestrator.run_mode_test()
         else:
             job_manager.update("3. Menjalankan proses pipeline standar...", 50)
             orchestrator.run_mode_statis(max_pages=max_pages)

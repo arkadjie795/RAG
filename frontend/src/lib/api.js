@@ -118,14 +118,23 @@ export async function stopIngestionRun() {
 // DATA EXPLORER & PROOF OF DATA API
 // ==========================================
 
+function buildCleanQuery(params = {}) {
+  const cleaned = {};
+  for (const [key, val] of Object.entries(params)) {
+    if (val !== undefined && val !== null && val !== '' && val !== 'undefined' && val !== 'null') {
+      cleaned[key] = val;
+    }
+  }
+  const qs = new URLSearchParams(cleaned).toString();
+  return qs ? `?${qs}` : '';
+}
+
 export async function getPublications(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  return request(`/api/data/publications${query ? '?' + query : ''}`);
+  return request(`/api/data/publications${buildCleanQuery(params)}`);
 }
 
 export async function getStatisticalTables(params = {}) {
-  const query = new URLSearchParams(params).toString();
-  return request(`/api/data/tables${query ? '?' + query : ''}`);
+  return request(`/api/data/tables${buildCleanQuery(params)}`);
 }
 
 export async function getTableDetail(tableId) {

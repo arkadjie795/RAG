@@ -25,10 +25,10 @@ def get_publications_list(
                 where_clauses = ["1=1"]
                 params: List[Any] = []
 
-                if tahun:
+                if tahun and str(tahun).strip().lower() not in ("semua", "undefined", "null", "none", ""):
                     where_clauses.append("release_date ILIKE %s")
                     params.append(f"%{tahun}%")
-                if kategori:
+                if kategori and str(kategori).strip().lower() not in ("semua", "undefined", "null", "none", ""):
                     where_clauses.append("category ILIKE %s")
                     params.append(f"%{kategori}%")
 
@@ -94,16 +94,16 @@ def get_statistical_tables(
                 where_clauses = ["1=1"]
                 params: List[Any] = []
 
-                if search:
+                if search and str(search).strip().lower() not in ("undefined", "null", "none", ""):
                     where_clauses.append("(table_title ILIKE %s OR catatan ILIKE %s)")
                     params.extend([f"%{search}%", f"%{search}%"])
-                if kecamatan and kecamatan.lower() != "semua":
+                if kecamatan and str(kecamatan).strip().lower() not in ("semua", "undefined", "null", "none", ""):
                     where_clauses.append("kecamatan ILIKE %s")
                     params.append(f"%{kecamatan}%")
-                if tahun and tahun.lower() != "semua":
+                if tahun and str(tahun).strip().lower() not in ("semua", "undefined", "null", "none", ""):
                     where_clauses.append("tahun = %s")
                     params.append(tahun)
-                if kategori and kategori.lower() != "semua":
+                if kategori and str(kategori).strip().lower() not in ("semua", "undefined", "null", "none", ""):
                     where_clauses.append("doc_title ILIKE %s")
                     params.append(f"%{kategori}%")
 
