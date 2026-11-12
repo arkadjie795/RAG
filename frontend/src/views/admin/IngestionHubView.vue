@@ -183,7 +183,7 @@
             <span class="text-[9px] font-bold bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded">Web API BPS</span>
           </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Mengecek katalog terbaru via Web API BPS (Domain 3321), mendownload hanya publikasi baru tanpa terhalang bot challenge.
+            Sinkronisasi batch 20 publikasi resmi terbaru via Web API BPS. Mengekstrak 100% seluruh halaman PDF, memisahkan tabel statistik & teks narasi ke JSON terpisah, lalu mengindeks pgvector.
           </p>
         </div>
 
@@ -209,7 +209,7 @@
             <span class="text-[9px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">Web API BPS</span>
           </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Menelusuri seluruh arsip katalog resmi BPS Demak hingga 10 halaman via Web API untuk mengindeks seluruh riwayat publikasi.
+            Menelusuri riwayat katalog lengkap Web API BPS Demak (hingga 100 dokumen). Membaca 100% halaman dari cover sampai selesai tanpa pemotongan.
           </p>
         </div>
 
@@ -235,7 +235,7 @@
             <span class="text-[9px] font-bold bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded">E2E Verification</span>
           </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Mengambil 1 publikasi terbaru secara instan via API atau PDF lokal, mengekstrak tabel, dan menguji retrieval pgvector.
+            Memvalidasi 1 dokumen PDF lokal/API secara cepat: ekstrak tabel, pisahkan teks narasi, simpan per-tabel JSON, dan uji query semantik pgvector.
           </p>
         </div>
 

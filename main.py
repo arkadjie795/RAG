@@ -58,7 +58,8 @@ class BPSPipelineOrchestrator:
         self,
         pdf_path: Path,
         metadata: Optional[Dict[str, Any]] = None,
-        pages: Optional[List[int]] = None
+        pages: Optional[List[int]] = None,
+        progress_callback: Optional[Any] = None
     ) -> Dict[str, Any]:
         """
         Executes ETL flow for a single PDF document:
@@ -92,9 +93,20 @@ class BPSPipelineOrchestrator:
         pub_id = meta["publication_id"]
 
         logger.info(f"========== Processing Document [{pub_id}]: {pdf_path.name} ==========")
+        if progress_callback:
+            try:
+                progress_callback(log_msg=f"[{pub_id[:12]}] Memulai ekstraksi 100% halaman dari: {pdf_path.name}")
+            except Exception:
+                pass
 
         # Step 1: Extraction (Tables & Narrative Texts)
         extracted_doc = self.extractor.process_pdf(pdf_path, metadata=meta, pages=pages)
+
+        if progress_callback:
+            try:
+                progress_callback(log_msg=f"[{pub_id[:12]}] Berhasil mengekstrak: {extracted_doc['total_tabel']} tabel statistik & {extracted_doc['total_teks']} teks narasi.")
+            except Exception:
+                pass
 
         # Step 2: Structuring (RAG JSON formulation & text representation injection)
         rag_chunks = self.structurer.build_rag_chunks_from_extraction(extracted_doc)
@@ -106,6 +118,12 @@ class BPSPipelineOrchestrator:
 
         # Step 3: Vectorization (Embedding generation)
         embedded_chunks = self.embedder.embed_rag_chunks(rag_chunks)
+
+        if progress_callback:
+            try:
+                progress_callback(log_msg=f"[{pub_id[:12]}] Vektorisasi: {len(embedded_chunks)} embedding chunk dibuat via SentenceTransformer.")
+            except Exception:
+                pass
 
         # Step 4: Main Data Storage
         # 4a. Document Store (Granular Per-Table & Per-Document JSON)
@@ -137,6 +155,12 @@ class BPSPipelineOrchestrator:
             tables_count=extracted_doc["total_tabel"],
             chunks_count=len(embedded_chunks)
         )
+
+        if progress_callback:
+            try:
+                progress_callback(log_msg=f"[{pub_id[:12]}] Tersimpan: {extracted_doc['total_tabel']} JSON tabel, JSON narasi, JSON dokumen & pgvector sukses.")
+            except Exception:
+                pass
 
         logger.success(
             f"Successfully completed ETL for [{pub_id}]. "
@@ -262,7 +286,7 @@ class BPSPipelineOrchestrator:
     # OPERATIONAL MODES
     # =========================================================================
 
-    def run_mode_statis(self, max_pages: int = 2) -> None:
+    def run_mode_statis(self, max_pages: int = 2, progress_callback: Optional[Any] = None) -> None:
         """
         MODE 1: STATIS (Default)
         - Scrapes the first 2 pages of the BPS catalog.
@@ -275,28 +299,79 @@ class BPSPipelineOrchestrator:
 
         # 1. Scrape & Ingest new publications (Prefer Official BPS Web API)
         logger.info(f"[MODE: STATIS] Fetching catalog up to {max_pages} pages via Official BPS Web API...")
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase=f"Menghubungi Web API BPS (batch {max_pages} halaman katalog)...",
+                    progress=30,
+                    log_msg=f"Menghubungi Web API BPS Demak (Domain 3321, batch {max_pages} halaman katalog = {max_pages * 10} publikasi)..."
+                )
+            except Exception:
+                pass
+
         try:
             newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages)
             logger.info(f"[MODE: STATIS] Web API downloaded {len(newly_downloaded)} new publications.")
+            if progress_callback:
+                try:
+                    progress_callback(
+                        phase=f"Web API BPS: {len(newly_downloaded)} publikasi baru diunduh",
+                        progress=40,
+                        log_msg=f"Web API BPS mengunduh {len(newly_downloaded)} publikasi PDF baru ke penyimpanan lokal."
+                    )
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning(f"[MODE: STATIS] Web API attempt encountered issue ({e}). Trying fallback scraper...")
+            if progress_callback:
+                try:
+                    progress_callback(log_msg=f"[Fallback] Mencoba crawler web lokal karena API: {e}")
+                except Exception:
+                    pass
             newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
 
         # 2. Extract & Index pending publications
         pending_items = self.registry.get_pending_extractions()
-        logger.info(f"[MODE: STATIS] Found {len(pending_items)} publications ready for extraction & indexing.")
+        total_pending = len(pending_items)
+        logger.info(f"[MODE: STATIS] Found {total_pending} publications ready for extraction & indexing.")
+
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase=f"Mengekstrak {total_pending} publikasi (100% halaman)...",
+                    progress=45,
+                    processed=0,
+                    total=total_pending,
+                    log_msg=f"Memulai ekstraksi granular (100% halaman PDF, pemisahan tabel & teks narasi, per-tabel JSON, pgvector) untuk {total_pending} publikasi."
+                )
+            except Exception:
+                pass
 
         success_count = 0
         total_indexed_chunks = 0
 
-        for item in pending_items:
+        for idx, item in enumerate(pending_items, 1):
             file_path = Path(item["local_file_path"])
             if not file_path.exists():
                 logger.error(f"File not found on disk: {file_path}")
                 continue
 
+            calc_pct = 45 + int((idx / max(1, total_pending)) * 50)
+            doc_name = item.get("title") or file_path.name
+            if progress_callback:
+                try:
+                    progress_callback(
+                        phase=f"[{idx}/{total_pending}] Membaca: {doc_name[:35]}...",
+                        progress=calc_pct,
+                        processed=idx,
+                        total=total_pending,
+                        log_msg=f"[{idx}/{total_pending}] Membaca 100% seluruh halaman dokumen PDF: {file_path.name}"
+                    )
+                except Exception:
+                    pass
+
             try:
-                res = self.process_single_pdf(file_path, metadata=item)
+                res = self.process_single_pdf(file_path, metadata=item, progress_callback=progress_callback)
                 if res.get("status") == "SUCCESS":
                     success_count += 1
                     total_indexed_chunks += res.get("total_chunks", 0)
@@ -311,7 +386,7 @@ class BPSPipelineOrchestrator:
         print(f"  • Total Chunks DB  : {total_indexed_chunks}")
         print("=" * 80 + "\n")
 
-    def run_mode_all(self, max_pages: int = 50) -> None:
+    def run_mode_all(self, max_pages: int = 50, progress_callback: Optional[Any] = None) -> None:
         """
         MODE 2: ALL (Deep History)
         - Scrapes deep historical catalog (e.g. 50 pages).
@@ -323,28 +398,74 @@ class BPSPipelineOrchestrator:
         print("=" * 80 + "\n")
 
         logger.info(f"[MODE: ALL] Starting deep historical crawl across {max_pages} pages via Official BPS Web API...")
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase=f"Menelusuri riwayat Web API BPS ({max_pages} halaman)...",
+                    progress=30,
+                    log_msg=f"Menelusuri arsip publikasi via Web API BPS (Domain 3321, target {max_pages} halaman)..."
+                )
+            except Exception:
+                pass
+
         try:
             newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages)
             logger.info(f"[MODE: ALL] Web API downloaded {len(newly_downloaded)} new publications.")
+            if progress_callback:
+                try:
+                    progress_callback(
+                        phase=f"Web API BPS: {len(newly_downloaded)} publikasi baru diunduh",
+                        progress=40,
+                        log_msg=f"Web API BPS selesai mengunduh {len(newly_downloaded)} file PDF baru."
+                    )
+                except Exception:
+                    pass
         except Exception as e:
             logger.warning(f"[MODE: ALL] Web API attempt encountered issue ({e}). Trying fallback scraper...")
             newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
         logger.info(f"[MODE: ALL] Historical crawl complete. Downloaded {len(newly_downloaded)} new publications.")
 
         pending_items = self.registry.get_pending_extractions()
-        logger.info(f"[MODE: ALL] Total publications pending processing: {len(pending_items)}")
+        total_pending = len(pending_items)
+        logger.info(f"[MODE: ALL] Total publications pending processing: {total_pending}")
+
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase=f"Mengekstrak {total_pending} publikasi historis...",
+                    progress=45,
+                    processed=0,
+                    total=total_pending,
+                    log_msg=f"Memulai ekstraksi 100% halaman untuk seluruh {total_pending} publikasi historis yang belum terindeks."
+                )
+            except Exception:
+                pass
 
         success_count = 0
         total_indexed_chunks = 0
 
-        for item in pending_items:
+        for idx, item in enumerate(pending_items, 1):
             file_path = Path(item["local_file_path"])
             if not file_path.exists():
                 logger.error(f"File not found on disk: {file_path}")
                 continue
 
+            calc_pct = 45 + int((idx / max(1, total_pending)) * 50)
+            doc_name = item.get("title") or file_path.name
+            if progress_callback:
+                try:
+                    progress_callback(
+                        phase=f"[{idx}/{total_pending}] Membaca: {doc_name[:35]}...",
+                        progress=calc_pct,
+                        processed=idx,
+                        total=total_pending,
+                        log_msg=f"[{idx}/{total_pending}] Ekstraksi 100% halaman: {file_path.name}"
+                    )
+                except Exception:
+                    pass
+
             try:
-                res = self.process_single_pdf(file_path, metadata=item)
+                res = self.process_single_pdf(file_path, metadata=item, progress_callback=progress_callback)
                 if res.get("status") == "SUCCESS":
                     success_count += 1
                     total_indexed_chunks += res.get("total_chunks", 0)
@@ -359,7 +480,7 @@ class BPSPipelineOrchestrator:
         print(f"  • Total Chunks Vectorized    : {total_indexed_chunks}")
         print("=" * 80 + "\n")
 
-    def run_mode_test(self) -> None:
+    def run_mode_test(self, progress_callback: Optional[Any] = None) -> None:
         """
         MODE 3: TEST (Single Document Verification)
         - Scrapes ONLY page 1.
@@ -374,6 +495,15 @@ class BPSPipelineOrchestrator:
 
         # Step 1: Discover page 1 (Prefer Official BPS Web API)
         logger.info("[MODE: TEST] Fetching publication page 1 via Official BPS Web API...")
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase="Mengambil publikasi terbaru via Web API BPS...",
+                    progress=30,
+                    log_msg="Mengambil 1 publikasi terbaru dari Web API BPS (Domain 3321)..."
+                )
+            except Exception:
+                pass
         target_pub = None
         downloaded_pdf_path = None
 
@@ -383,6 +513,11 @@ class BPSPipelineOrchestrator:
             if api_pubs:
                 target_pub = api_pubs[0]
                 logger.info(f"[MODE: TEST] Found most recent publication via API: [{target_pub['publication_id']}] {target_pub['title']}")
+                if progress_callback:
+                    try:
+                        progress_callback(log_msg=f"Menemukan publikasi: [{target_pub['publication_id']}] {target_pub['title']}")
+                    except Exception:
+                        pass
                 downloaded_pdf_path = self.api_client.download_publication_pdf(target_pub)
         except Exception as e:
             logger.warning(f"[MODE: TEST] Web API fetch error: {e}")
@@ -434,10 +569,23 @@ class BPSPipelineOrchestrator:
 
         # Step 2: Process the single document (Extract first 10 pages for speed)
         logger.info("[MODE: TEST] Extracting, Structuring, and Vectorizing document...")
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase=f"Mengekstrak single dokumen: {downloaded_pdf_path.name}...",
+                    progress=60,
+                    processed=1,
+                    total=1,
+                    log_msg=f"Mengekstrak dan mengindeks single dokumen: {downloaded_pdf_path.name}"
+                )
+            except Exception:
+                pass
+
         res = self.process_single_pdf(
             pdf_path=downloaded_pdf_path,
             metadata=target_pub,
-            pages=list(range(1, 11))
+            pages=list(range(1, 11)),
+            progress_callback=progress_callback
         )
 
         # If PDF was blank sample, inject sample row to test ChromaDB retrieval

@@ -107,7 +107,7 @@ job_manager = IngestionJobState()
 def _run_crawler_task(mode: str, max_pages: int, pdf_path: Optional[str]):
     """Background task invoking master orchestrator pipeline safely."""
     try:
-        job_manager.update("1. Memeriksa portal BPS & registri deduplikasi...", 10)
+        job_manager.update("1. Memeriksa Web API BPS & status registri...", 10)
         from pathlib import Path
         from main import BPSPipelineOrchestrator
 
@@ -118,27 +118,39 @@ def _run_crawler_task(mode: str, max_pages: int, pdf_path: Optional[str]):
             job_manager.finish(success=False, err="Dibatalkan oleh admin")
             return
 
+        def _on_progress(
+            phase: Optional[str] = None,
+            progress: Optional[int] = None,
+            processed: int = 0,
+            total: int = 0,
+            log_msg: Optional[str] = None
+        ):
+            if phase is not None and progress is not None:
+                job_manager.update(phase, progress, processed=processed, total=total)
+            if log_msg:
+                job_manager.log(log_msg)
+
         if mode == "statis":
-            job_manager.update(f"3. Menjalankan crawler katalog (maksimal {max_pages} halaman)...", 45)
-            orchestrator.run_mode_statis(max_pages=max_pages)
+            job_manager.update(f"3. Menjalankan sinkronisasi Web API BPS ({max_pages} halaman katalog)...", 35)
+            orchestrator.run_mode_statis(max_pages=max_pages, progress_callback=_on_progress)
         elif mode == "all":
-            job_manager.update(f"3. Menjalankan crawler katalog historis ({max_pages} halaman)...", 45)
-            orchestrator.run_mode_all(max_pages=max_pages)
+            job_manager.update(f"3. Menjalankan deep ingest Web API BPS ({max_pages} halaman katalog)...", 35)
+            orchestrator.run_mode_all(max_pages=max_pages, progress_callback=_on_progress)
         elif mode == "pdf" and pdf_path:
             target_path = Path(pdf_path)
             if not target_path.exists():
                 job_manager.finish(success=False, err=f"File PDF tidak ditemukan: {pdf_path}")
                 return
-            job_manager.update(f"3. Mengekstrak dan mengindeks {target_path.name}...", 50)
-            orchestrator.process_single_pdf(target_path)
+            job_manager.update(f"3. Mengekstrak dan mengindeks {target_path.name}...", 40)
+            orchestrator.process_single_pdf(target_path, progress_callback=_on_progress)
         elif mode in ("test", "single"):
-            job_manager.update("3. Menjalankan uji ekstraksi dan indexing single dokumen...", 50)
-            orchestrator.run_mode_test()
+            job_manager.update("3. Menjalankan uji ekstraksi dan indexing single dokumen...", 40)
+            orchestrator.run_mode_test(progress_callback=_on_progress)
         else:
-            job_manager.update("3. Menjalankan proses pipeline standar...", 50)
-            orchestrator.run_mode_statis(max_pages=max_pages)
+            job_manager.update("3. Menjalankan proses pipeline standar...", 35)
+            orchestrator.run_mode_statis(max_pages=max_pages, progress_callback=_on_progress)
 
-        job_manager.update("4. Memfinalisasi indeks vektor dan tabel PostgreSQL...", 90)
+        job_manager.update("4. Memfinalisasi indeks vektor dan tabel PostgreSQL...", 95)
         job_manager.finish(success=True)
     except Exception as ex:
         logger.error(f"[IngestionRouter] Error executing crawl task: {ex}")
