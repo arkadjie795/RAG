@@ -178,9 +178,12 @@
           <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center font-bold">
             <Calendar class="w-5 h-5" />
           </div>
-          <h3 class="text-sm font-black text-slate-900">1. Mode Statis (Inkremental)</h3>
+          <div class="flex items-center space-x-2">
+            <h3 class="text-sm font-black text-slate-900">1. Mode Inkremental</h3>
+            <span class="text-[9px] font-bold bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded">Web API BPS</span>
+          </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Mengecek 2 halaman katalog terbaru portal BPS Demak, mendownload hanya publikasi yang belum pernah di-ingest.
+            Mengecek katalog terbaru via Web API BPS (Domain 3321), mendownload hanya publikasi baru tanpa terhalang bot challenge.
           </p>
         </div>
 
@@ -191,7 +194,7 @@
           class="w-full py-2.5 px-4 bg-sky-700 hover:bg-sky-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 shadow-xs cursor-pointer disabled:opacity-40"
         >
           <Play class="w-3.5 h-3.5" />
-          <span>Jalankan Mode Statis</span>
+          <span>Jalankan Mode Inkremental</span>
         </button>
       </div>
 
@@ -201,20 +204,23 @@
           <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold">
             <Archive class="w-5 h-5" />
           </div>
-          <h3 class="text-sm font-black text-slate-900">2. Mode Deep Crawl (All)</h3>
+          <div class="flex items-center space-x-2">
+            <h3 class="text-sm font-black text-slate-900">2. Mode Deep Ingest</h3>
+            <span class="text-[9px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">Web API BPS</span>
+          </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Menelusuri seluruh arsip katalog hingga halaman ke-50 untuk mengindeks seluruh riwayat publikasi Demak.
+            Menelusuri seluruh arsip katalog resmi BPS Demak hingga 10 halaman via Web API untuk mengindeks seluruh riwayat publikasi.
           </p>
         </div>
 
         <button
           type="button"
-          @click="startScraper('all', 20)"
+          @click="startScraper('all', 10)"
           :disabled="jobState.status === 'RUNNING'"
           class="w-full py-2.5 px-4 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 shadow-xs cursor-pointer disabled:opacity-40"
         >
           <Play class="w-3.5 h-3.5" />
-          <span>Jalankan Deep Crawl</span>
+          <span>Jalankan Deep Ingest</span>
         </button>
       </div>
 
@@ -224,9 +230,12 @@
           <div class="w-10 h-10 rounded-xl bg-orange-50 text-orange-700 flex items-center justify-center font-bold">
             <FileText class="w-5 h-5" />
           </div>
-          <h3 class="text-sm font-black text-slate-900">3. Single PDF Mandiri</h3>
+          <div class="flex items-center space-x-2">
+            <h3 class="text-sm font-black text-slate-900">3. Test Single Dokumen</h3>
+            <span class="text-[9px] font-bold bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded">E2E Verification</span>
+          </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Memproses satu dokumen PDF publikasi lokal secara instan tanpa perlu menunggu scraping seluruh katalog web.
+            Mengambil 1 publikasi terbaru secara instan via API atau PDF lokal, mengekstrak tabel, dan menguji retrieval pgvector.
           </p>
         </div>
 
@@ -237,7 +246,7 @@
           class="w-full py-2.5 px-4 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 shadow-xs cursor-pointer disabled:opacity-40"
         >
           <Play class="w-3.5 h-3.5" />
-          <span>Test Single Dokumen</span>
+          <span>Uji Single Dokumen</span>
         </button>
       </div>
     </div>

@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     DEFAULT_REGION: str = "Kabupaten Demak"
     DEFAULT_REGION_CODE: str = "3321"  # Demak BPS Area Code
 
+    # Official BPS Web API Configuration (webapi.bps.go.id)
+    BPS_API_KEY: str = "b73ea5437eb23fb8309858b840029da2"
+    BPS_API_BASE_URL: str = "https://webapi.bps.go.id/v1/api/"
+    BPS_DOMAIN_ID: str = "3321"
+
     # Ingestion configuration
     REQUEST_TIMEOUT: int = 30
     MAX_DOWNLOAD_RETRIES: int = 3

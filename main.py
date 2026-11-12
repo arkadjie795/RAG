@@ -21,6 +21,7 @@ from loguru import logger
 from config.settings import settings
 from modules.ingestion.registry import PublicationRegistry
 from modules.ingestion.bps_scraper import BPSPublicationScraper
+from modules.ingestion.bps_api_client import BPSWebApiClient
 from modules.extraction.pdf_pipeline import PDFExtractionPipeline
 from modules.structuring.json_builder import JSONStructureBuilder
 from modules.vectorization.embedder import VectorEmbedder
@@ -45,6 +46,7 @@ class BPSPipelineOrchestrator:
     def __init__(self):
         logger.info("Initializing BPS RAG Pipeline Orchestrator...")
         self.registry = PublicationRegistry()
+        self.api_client = BPSWebApiClient(registry=self.registry)
         self.scraper = BPSPublicationScraper(registry=self.registry)
         self.extractor = PDFExtractionPipeline()
         self.structurer = JSONStructureBuilder()
@@ -271,10 +273,14 @@ class BPSPipelineOrchestrator:
         print(f"🚀 RUNNING PIPELINE MODE: [STATIS] (Periodic Ingestion - Max {max_pages} Pages)")
         print("=" * 80 + "\n")
 
-        # 1. Scrape & Ingest new publications
-        logger.info(f"[MODE: STATIS] Scraping recent catalog up to {max_pages} pages...")
-        newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
-        logger.info(f"[MODE: STATIS] Downloaded {len(newly_downloaded)} new publications.")
+        # 1. Scrape & Ingest new publications (Prefer Official BPS Web API)
+        logger.info(f"[MODE: STATIS] Fetching catalog up to {max_pages} pages via Official BPS Web API...")
+        try:
+            newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages)
+            logger.info(f"[MODE: STATIS] Web API downloaded {len(newly_downloaded)} new publications.")
+        except Exception as e:
+            logger.warning(f"[MODE: STATIS] Web API attempt encountered issue ({e}). Trying fallback scraper...")
+            newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
 
         # 2. Extract & Index pending publications
         pending_items = self.registry.get_pending_extractions()
@@ -316,8 +322,13 @@ class BPSPipelineOrchestrator:
         print(f"🌐 RUNNING PIPELINE MODE: [ALL] (Deep Historical Ingestion - Max {max_pages} Pages)")
         print("=" * 80 + "\n")
 
-        logger.info(f"[MODE: ALL] Starting deep historical crawl across {max_pages} pages...")
-        newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
+        logger.info(f"[MODE: ALL] Starting deep historical crawl across {max_pages} pages via Official BPS Web API...")
+        try:
+            newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages)
+            logger.info(f"[MODE: ALL] Web API downloaded {len(newly_downloaded)} new publications.")
+        except Exception as e:
+            logger.warning(f"[MODE: ALL] Web API attempt encountered issue ({e}). Trying fallback scraper...")
+            newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
         logger.info(f"[MODE: ALL] Historical crawl complete. Downloaded {len(newly_downloaded)} new publications.")
 
         pending_items = self.registry.get_pending_extractions()
@@ -361,17 +372,29 @@ class BPSPipelineOrchestrator:
         print("🧪 RUNNING PIPELINE MODE: [TEST] (Single-Document E2E Verification)")
         print("=" * 80 + "\n")
 
-        # Step 1: Discover page 1 only
-        logger.info("[MODE: TEST] Fetching publication catalog page 1...")
-        pubs = self.scraper.fetch_publication_list(max_pages=1, keyword="Demak")
-
+        # Step 1: Discover page 1 (Prefer Official BPS Web API)
+        logger.info("[MODE: TEST] Fetching publication page 1 via Official BPS Web API...")
         target_pub = None
         downloaded_pdf_path = None
 
-        if pubs:
-            target_pub = pubs[0]
-            logger.info(f"[MODE: TEST] Found most recent publication: [{target_pub['publication_id']}] {target_pub['title']}")
-            downloaded_pdf_path = self.scraper.download_pdf(target_pub)
+        try:
+            page_res = self.api_client.fetch_publication_page(page=1)
+            api_pubs = page_res.get("items", [])
+            if api_pubs:
+                target_pub = api_pubs[0]
+                logger.info(f"[MODE: TEST] Found most recent publication via API: [{target_pub['publication_id']}] {target_pub['title']}")
+                downloaded_pdf_path = self.api_client.download_publication_pdf(target_pub)
+        except Exception as e:
+            logger.warning(f"[MODE: TEST] Web API fetch error: {e}")
+
+        # Fallback to web scraper if API didn't return a file
+        if not downloaded_pdf_path:
+            logger.info("[MODE: TEST] Trying fallback web scraper for page 1...")
+            pubs = self.scraper.fetch_publication_list(max_pages=1, keyword="Demak")
+            if pubs:
+                target_pub = pubs[0]
+                logger.info(f"[MODE: TEST] Found publication via scraper: [{target_pub['publication_id']}] {target_pub['title']}")
+                downloaded_pdf_path = self.scraper.download_pdf(target_pub)
 
         # Fallback to local files if live network blocked or already present
         if not downloaded_pdf_path:
