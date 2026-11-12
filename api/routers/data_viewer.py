@@ -179,6 +179,19 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
                 headers_json = row[9] if isinstance(row[9], list) else (json.loads(row[9]) if row[9] else [])
                 raw_data_json = row[10] if isinstance(row[10], list) else (json.loads(row[10]) if row[10] else [])
 
+                # Fetch natural language representation from vector_chunks
+                cur.execute(
+                    """
+                    SELECT representasi_teks FROM vector_chunks 
+                    WHERE doc_id = %s AND (table_id ILIKE %s OR halaman = %s)
+                    ORDER BY CASE WHEN table_id ILIKE %s THEN 0 ELSE 1 END
+                    LIMIT 1
+                    """,
+                    (row[1], f"%{row[0].split('_p')[-1]}%", row[3], f"%{row[0].split('_p')[-1]}%")
+                )
+                rep_row = cur.fetchone()
+                representasi_teks = rep_row[0] if (rep_row and rep_row[0]) else f"Tabel Statistik: {row[2]} (Halaman {row[3]}, Tahun {row[4]}). Memuat {row[7]} baris data."
+
                 return {
                     "success": True,
                     "data": {
@@ -193,7 +206,7 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
                         "column_count": row[8],
                         "headers": headers_json,
                         "rows": raw_data_json,
-                        "representasi_teks": "",
+                        "representasi_teks": representasi_teks,
                         "satuan": row[11],
                         "sumber": row[12],
                         "catatan": row[13],

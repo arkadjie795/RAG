@@ -8,10 +8,10 @@ echo   Dual-Portal System: Public AI Assistant + Admin Management Hub
 echo ==============================================================================
 echo.
 
-:: Detect Python
+:: Detect Python (Prioritize Python 3.12 with project dependencies)
 set PYTHON_CMD=python
-if exist "C:\laragon\bin\python\python-3.10\python.exe" (
-    set "PYTHON_CMD=C:\laragon\bin\python\python-3.10\python.exe"
+if exist "C:\Users\arkadjie\AppData\Local\Programs\Python\Python312\python.exe" (
+    set "PYTHON_CMD=C:\Users\arkadjie\AppData\Local\Programs\Python\Python312\python.exe"
 )
 
 echo [1/3] Menyalakan Backend FastAPI (Port 8000)...

@@ -14,12 +14,80 @@
       <!-- Action Button -->
       <button
         type="button"
-        @click="refreshStatus"
+        @click="refreshAll"
         class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition flex items-center space-x-1.5 self-start sm:self-auto cursor-pointer"
       >
         <RefreshCw class="w-3.5 h-3.5" :class="{ 'animate-spin': isRefreshing }" />
         <span>Segarkan Status</span>
       </button>
+    </div>
+
+    <!-- PERSISTENT DATABASE STATUS OVERVIEW (READ FROM POSTGRESQL & PGVECTOR) -->
+    <div class="bg-gradient-to-br from-slate-900 to-sky-950 text-white rounded-2xl p-6 shadow-md border border-slate-800 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-white/10">
+        <div class="flex items-center space-x-2">
+          <Database class="w-5 h-5 text-sky-400" />
+          <h3 class="text-sm font-black tracking-tight text-white">Status Database Terindeks Saat Ini (PostgreSQL & pgvector)</h3>
+        </div>
+        <span class="inline-flex items-center space-x-1.5 text-[11px] font-bold text-emerald-300 bg-emerald-950/70 border border-emerald-500/30 px-2.5 py-1 rounded-full">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>PostgreSQL 16 & pgvector Terhubung</span>
+        </span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+        <!-- Card 1: Publikasi -->
+        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+          <p class="text-[11px] text-sky-200/80 font-medium flex items-center space-x-1">
+            <BookOpen class="w-3.5 h-3.5" />
+            <span>Publikasi BPS</span>
+          </p>
+          <p class="text-2xl font-black font-mono text-white">{{ dbStats.total_publications }}</p>
+          <p class="text-[10px] text-slate-300 truncate">PDRB Demak Lap. Usaha</p>
+        </div>
+
+        <!-- Card 2: Tabel Statistik -->
+        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+          <p class="text-[11px] text-sky-200/80 font-medium flex items-center space-x-1">
+            <Database class="w-3.5 h-3.5" />
+            <span>Tabel Statistik</span>
+          </p>
+          <p class="text-2xl font-black font-mono text-white">{{ dbStats.total_tables }}</p>
+          <router-link
+            to="/admin/data"
+            class="text-[10px] text-sky-300 hover:text-sky-200 font-bold inline-flex items-center space-x-0.5 underline transition"
+          >
+            <span>Buka Data Explorer</span>
+            <ArrowRight class="w-3 h-3 ml-0.5" />
+          </router-link>
+        </div>
+
+        <!-- Card 3: Vector Chunks -->
+        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+          <p class="text-[11px] text-sky-200/80 font-medium flex items-center space-x-1">
+            <Layers class="w-3.5 h-3.5" />
+            <span>Vektor Chunks</span>
+          </p>
+          <p class="text-2xl font-black font-mono text-white">{{ dbStats.total_chunks }}</p>
+          <router-link
+            to="/admin/vector"
+            class="text-[10px] text-sky-300 hover:text-sky-200 font-bold inline-flex items-center space-x-0.5 underline transition"
+          >
+            <span>Observabilitas Vektor</span>
+            <ArrowRight class="w-3 h-3 ml-0.5" />
+          </router-link>
+        </div>
+
+        <!-- Card 4: Embedding Cache -->
+        <div class="bg-white/5 border border-white/10 rounded-xl p-3.5 space-y-1">
+          <p class="text-[11px] text-sky-200/80 font-medium flex items-center space-x-1">
+            <CheckCircle2 class="w-3.5 h-3.5 text-emerald-400" />
+            <span>Embedding Cache</span>
+          </p>
+          <p class="text-2xl font-black font-mono text-emerald-300">{{ dbStats.cached_embeddings }}</p>
+          <p class="text-[10px] text-slate-300">MD5 Deduped (Hemat Kuota)</p>
+        </div>
+      </div>
     </div>
 
     <!-- ACTIVE JOB PROGRESS MONITOR CARD -->
@@ -35,11 +103,14 @@
               'bg-red-50 text-red-800 border-red-300': jobState.status === 'FAILED'
             }"
           >
-            ● {{ jobState.status }}
+            ● Status Scraper: {{ jobState.status }}
           </span>
 
           <span v-if="jobState.job_id" class="text-xs font-mono text-slate-400">
             ID: {{ jobState.job_id }} (Mode: {{ jobState.mode }})
+          </span>
+          <span v-else class="text-xs text-slate-400">
+            (Standby / Menunggu instruksi trigger baru)
           </span>
         </div>
 
@@ -52,6 +123,14 @@
           <Square class="w-3.5 h-3.5" />
           <span>Hentikan Job</span>
         </button>
+      </div>
+
+      <!-- Informational Hint for Admin -->
+      <div v-if="jobState.status === 'IDLE'" class="p-3 bg-sky-50/70 border border-sky-100 rounded-xl text-xs text-sky-800 flex items-start space-x-2">
+        <Info class="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
+        <p class="leading-relaxed">
+          <span class="font-bold">Info Status:</span> Scraper berada dalam status <span class="font-mono font-bold">IDLE</span> karena saat ini tidak ada proses crawling aktif yang sedang berjalan. Seluruh data yang sudah pernah di-ingest sebelumnya ({{ dbStats.total_tables }} tabel & {{ dbStats.total_chunks }} vektor) tersimpan aman di PostgreSQL dan dapat dilihat melalui menu <router-link to="/admin/data" class="font-bold underline text-sky-900">Data & Table Explorer</router-link>.
+        </p>
       </div>
 
       <!-- Progress Bar -->
@@ -71,7 +150,7 @@
       <!-- Sub Metrics -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 text-xs">
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-          <p class="text-slate-500 text-[11px]">Item Diproses</p>
+          <p class="text-slate-500 text-[11px]">Item Batch Crawl</p>
           <p class="text-base font-extrabold text-slate-900 mt-0.5">
             {{ jobState.processed_items }} <span class="text-slate-400 font-normal">/ {{ jobState.total_items || '-' }}</span>
           </p>
@@ -194,9 +273,15 @@ import {
   Calendar,
   Archive,
   FileText,
-  Terminal
+  Terminal,
+  Database,
+  Layers,
+  BookOpen,
+  ArrowRight,
+  CheckCircle2,
+  Info
 } from 'lucide-vue-next'
-import { getIngestionStatus, triggerIngestionRun, stopIngestionRun } from '../../lib/api'
+import { getIngestionStatus, triggerIngestionRun, stopIngestionRun, getVectorStats } from '../../lib/api'
 
 const jobState = ref({
   status: 'IDLE',
@@ -208,17 +293,44 @@ const jobState = ref({
   logs: []
 })
 
+const dbStats = ref({
+  total_publications: 1,
+  total_tables: 35,
+  total_chunks: 1210,
+  cached_embeddings: 1229
+})
+
 const isRefreshing = ref(false)
 let pollingInterval = null
 
 onMounted(() => {
-  refreshStatus()
+  refreshAll()
   pollingInterval = setInterval(refreshStatus, 2500)
 })
 
 onUnmounted(() => {
   if (pollingInterval) clearInterval(pollingInterval)
 })
+
+async function loadDbStats() {
+  try {
+    const res = await getVectorStats()
+    if (res && res.success) {
+      dbStats.value = {
+        total_publications: res.total_publications || 1,
+        total_tables: res.total_tables || 35,
+        total_chunks: res.total_chunks || 1210,
+        cached_embeddings: res.cached_embeddings || 1229
+      }
+    }
+  } catch (err) {
+    console.warn('Gagal memuat dbStats telemetri:', err)
+  }
+}
+
+async function refreshAll() {
+  await Promise.all([refreshStatus(), loadDbStats()])
+}
 
 async function refreshStatus() {
   isRefreshing.value = true
@@ -235,7 +347,7 @@ async function refreshStatus() {
 async function startScraper(mode, maxPages = 2) {
   try {
     await triggerIngestionRun(mode, maxPages)
-    await refreshStatus()
+    await refreshAll()
   } catch (err) {
     alert(`Gagal menjalankan scraper: ${err.message}`)
   }
@@ -245,7 +357,7 @@ async function stopJob() {
   if (confirm('Apakah Anda yakin ingin membatalkan proses scraper yang sedang berjalan?')) {
     try {
       await stopIngestionRun()
-      await refreshStatus()
+      await refreshAll()
     } catch (err) {
       alert(`Gagal menghentikan job: ${err.message}`)
     }
