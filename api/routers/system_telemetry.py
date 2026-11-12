@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from loguru import logger
-from config.database import get_db_connection
+from config.database import get_db_connection, get_db_cursor
 from modules.retrieval.hybrid_search import HybridRetriever
 
 router = APIRouter(prefix="/api/system", tags=["System Telemetry & Observability"])
@@ -30,13 +30,12 @@ def get_system_health() -> Dict[str, Any]:
     db_error = None
 
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT extversion FROM pg_extension WHERE extname = 'vector';")
-                row = cur.fetchone()
-                if row:
-                    pgvector_ver = row[0]
-                    db_ok = True
+        with get_db_cursor() as cur:
+            cur.execute("SELECT extversion FROM pg_extension WHERE extname = 'vector';")
+            row = cur.fetchone()
+            if row:
+                pgvector_ver = row[0]
+                db_ok = True
     except Exception as ex:
         db_error = str(ex)
 
@@ -65,38 +64,37 @@ def get_system_health() -> Dict[str, Any]:
 def get_vector_observability_stats() -> Dict[str, Any]:
     """Returns total vector chunks, embedding cache hit metrics, and category distributions."""
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("SELECT COUNT(*) FROM vector_chunks;")
-                total_chunks = cur.fetchone()[0]
+        with get_db_cursor() as cur:
+            cur.execute("SELECT COUNT(*) FROM vector_chunks;")
+            total_chunks = cur.fetchone()[0]
 
-                cur.execute("SELECT COUNT(*) FROM embedding_cache;")
-                cached_embeddings = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM embedding_cache;")
+            cached_embeddings = cur.fetchone()[0]
 
-                cur.execute("SELECT COUNT(DISTINCT table_id) FROM statistical_tables;")
-                total_tables = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(DISTINCT table_id) FROM statistical_tables;")
+            total_tables = cur.fetchone()[0]
 
-                cur.execute("SELECT COUNT(*) FROM publications;")
-                total_publications = cur.fetchone()[0]
+            cur.execute("SELECT COUNT(*) FROM publications;")
+            total_publications = cur.fetchone()[0]
 
-                # Year breakdown
-                cur.execute(
-                    """
-                    SELECT tahun, COUNT(*) FROM vector_chunks
-                    WHERE tahun IS NOT NULL
-                    GROUP BY tahun ORDER BY tahun DESC LIMIT 6;
-                    """
-                )
-                by_year = [{"tahun": r[0], "count": r[1]} for r in cur.fetchall()]
+            # Year breakdown
+            cur.execute(
+                """
+                SELECT tahun, COUNT(*) FROM vector_chunks
+                WHERE tahun IS NOT NULL
+                GROUP BY tahun ORDER BY tahun DESC LIMIT 6;
+                """
+            )
+            by_year = [{"tahun": r[0], "count": r[1]} for r in cur.fetchall()]
 
-                return {
-                    "success": True,
-                    "total_chunks": total_chunks,
-                    "cached_embeddings": cached_embeddings,
-                    "total_tables": total_tables,
-                    "total_publications": total_publications,
-                    "breakdown_by_year": by_year
-                }
+            return {
+                "success": True,
+                "total_chunks": total_chunks,
+                "cached_embeddings": cached_embeddings,
+                "total_tables": total_tables,
+                "total_publications": total_publications,
+                "breakdown_by_year": by_year
+            }
     except Exception as ex:
         logger.error(f"[SystemTelemetryRouter] Error querying vector stats: {ex}")
         return {

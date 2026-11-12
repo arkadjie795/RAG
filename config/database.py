@@ -4,6 +4,7 @@ PostgreSQL and pgvector Database Connection Manager for BPS RAG3321.
 import psycopg2
 from psycopg2.extensions import connection as PgConnection
 from psycopg2.extras import RealDictCursor
+from contextlib import contextmanager
 from loguru import logger
 
 from config.settings import settings
@@ -27,6 +28,25 @@ def get_db_connection(database: str = None) -> PgConnection:
     except Exception as e:
         logger.error(f"[Database] Failed to connect to PostgreSQL at {settings.DB_HOST}:{settings.DB_PORT}/{dbname}: {e}")
         raise
+
+
+@contextmanager
+def get_db_cursor(database: str = None, commit: bool = False):
+    """
+    Safe context manager yielding a cursor and always guaranteeing connection closure.
+    Prevents PostgreSQL connection leaks in high-frequency FastAPI endpoints.
+    """
+    conn = get_db_connection(database=database)
+    try:
+        with conn.cursor() as cur:
+            yield cur
+        if commit:
+            conn.commit()
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def verify_pgvector_installed(conn: PgConnection) -> bool:

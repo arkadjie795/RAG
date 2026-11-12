@@ -22,7 +22,7 @@ class IngestionJobState:
     """Thread-safe singleton tracking crawler background execution."""
 
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.RLock()
         self.status: str = "IDLE"  # IDLE, RUNNING, COMPLETED, FAILED, STOPPED
         self.mode: str = "statis"
         self.job_id: Optional[str] = None
@@ -36,12 +36,15 @@ class IngestionJobState:
         self.cancel_requested: bool = False
         self.recent_logs: list = []
 
+    def _append_log(self, message: str):
+        timestamp = time.strftime("%H:%M:%S")
+        self.recent_logs.append(f"[{timestamp}] {message}")
+        if len(self.recent_logs) > 50:
+            self.recent_logs.pop(0)
+
     def log(self, message: str):
         with self.lock:
-            timestamp = time.strftime("%H:%M:%S")
-            self.recent_logs.append(f"[{timestamp}] {message}")
-            if len(self.recent_logs) > 50:
-                self.recent_logs.pop(0)
+            self._append_log(message)
 
     def reset(self, job_id: str, mode: str):
         with self.lock:
@@ -57,7 +60,7 @@ class IngestionJobState:
             self.finished_at = None
             self.cancel_requested = False
             self.recent_logs = []
-            self.log(f"Job '{job_id}' dimulai dengan mode: {mode}")
+            self._append_log(f"Job '{job_id}' dimulai dengan mode: {mode}")
 
     def update(self, phase: str, progress: int, processed: int = 0, total: int = 0):
         with self.lock:
@@ -67,7 +70,7 @@ class IngestionJobState:
                 self.processed_items = processed
             if total:
                 self.total_items = total
-            self.log(f"{phase} ({self.progress_pct}%)")
+            self._append_log(f"{phase} ({self.progress_pct}%)")
 
     def finish(self, success: bool = True, err: Optional[str] = None):
         with self.lock:
@@ -76,7 +79,7 @@ class IngestionJobState:
             self.progress_pct = 100 if success else self.progress_pct
             self.current_phase = "Selesai" if success else f"Gagal: {err}"
             self.error_message = err
-            self.log("Job selesai dengan sukses." if success else f"Job gagal: {err}")
+            self._append_log("Job selesai dengan sukses." if success else f"Job gagal: {err}")
 
     def to_dict(self) -> Dict[str, Any]:
         with self.lock:
