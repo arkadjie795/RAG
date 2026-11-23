@@ -43,35 +43,67 @@ def detect_daerah_from_title(title: str) -> str:
         return "Kecamatan Demak"
     return "Kabupaten Demak"
 
-def is_valid_statistical_table(title: str, row_count: int = 1, col_count: int = 1) -> bool:
+def is_valid_statistical_table(
+    title: str, 
+    row_count: int = 1, 
+    col_count: int = 1,
+    cols: Optional[List[Any]] = None,
+    records: Optional[List[Any]] = None
+) -> bool:
     """
     Validates whether a table record is a real statistical table or a false-positive narrative fragment.
-    Filters out prose sentences, headings, and tables of contents accidentally parsed by OCR.
+    Filters out prose sentences, headings, glossaries, and tables of contents accidentally parsed by OCR.
     """
-    if not title or len(title.strip()) < 4:
+    if not title or len(title.strip()) < 5:
         return False
     s = title.strip()
-    # Reject sentence fragments starting with lowercase
+
+    # 1. Reject sentence fragments starting with lowercase
     if s[0].islower():
         return False
-    # Reject sentence fragments ending with trailing hyphen, slash, or conjunction
+
+    # 2. Reject sentence fragments ending with trailing hyphen, comma, slash, or conjunction
     if re.search(r'[\-\,\/]$', s):
         return False
-    if re.search(r'(yaitu|sebagai|adalah|bahwa|sehingga|namun|dengan|untuk|yang)\s*$', s, re.IGNORECASE):
+    if re.search(r'\b(yaitu|sebagai|adalah|bahwa|sehingga|namun|dengan|untuk|yang)\s*$', s, re.IGNORECASE):
         return False
-    # Reject non-table headings and metadata
+
+    # 3. Reject glossary / concept definitions (e.g. "10. Tidak Punya Ijazah SD adalah jika...")
+    if re.search(r'\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\b', s, re.IGNORECASE):
+        return False
+
+    # 4. Reject Table of Contents dots in title (e.g. "Tabel 17. ... ...... 53")
+    if re.search(r'\.{3,}', s):
+        return False
+
+    # 5. Reject document headings, preamble, and non-table metadata
     reject_patterns = [
         r'^(assalamu|bupati|halaman|daftar|bab\s+[ivxlcdm]+|kata\s+pengantar|puji\s+syukur|issn|undang-undang|gambar\s+\d+)',
         r'^\d+\.\d+\.?\s*(latar|maksud|tujuan|metodologi|ruang\s+lingkup|sistematika|kesimpulan|saran)',
-        r'\.{4,}',
-        r'badan pusat statistik'
+        r'badan pusat statistik',
+        r'sistematika penulisan',
+        r'tim penyusun',
+        r'berakhlak'
     ]
     for p in reject_patterns:
         if re.search(p, s, re.IGNORECASE):
             return False
 
-    # Positive match 1: Standard official BPS table numbering (Tabel 1, Table 2.1, 3.15.)
-    if re.search(r'^(tabel|table|\d+\.[\d\.]*)\s+', s, re.IGNORECASE):
+    # 6. Reject Table of Contents (Daftar Tabel) parsed as table:
+    # A Table of Contents contains leader dots like '......' in row cells
+    if records:
+        recs_str = json.dumps(records)
+        if re.search(r'\.{3,}', recs_str):
+            return False
+
+    if cols:
+        cols_str = " ".join(str(c) for c in cols).lower()
+        if 'daftar_tabel' in cols_str:
+            return False
+
+    # 7. Positive match: Standard official BPS table numbering (Tabel 1, Table 2.1, 3.15.)
+    # Strictly requires 'Tabel' or 'Table'. Bare numbers like "10. " are REJECTED!
+    if re.search(r'^(tabel|table)\s+[\d\.]*', s, re.IGNORECASE):
         return True
 
     # Positive match 2: Clean statistical titles without sentence punctuation in middle
@@ -131,8 +163,16 @@ def get_publications_list(
             cur.execute(f"SELECT COUNT(*) FROM publications p WHERE {where_sql}", tuple(params))
             total = cur.fetchone()[0]
 
-            # Overall total tables across the database
-            cur.execute("SELECT COUNT(*) FROM statistical_tables;")
+            # Overall total valid tables across the database
+            cur.execute("""
+                SELECT COUNT(*) FROM statistical_tables
+                WHERE table_title ~* '^(tabel|table)\\s+[\\d\\.]*'
+                  AND table_title !~* '\\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\\b'
+                  AND table_title !~ '\\.{3,}'
+                  AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab|kata\\s+pengantar|puji\\s+syukur|tim\\s+penyusun|gambar|berakhlak)'
+                  AND table_title !~ '[\\-\\,\\/]$'
+                  AND table_title !~ '^[a-z]';
+            """)
             total_tables_overall = cur.fetchone()[0]
 
             # Query publications with table count from statistical_tables (using COALESCE)
@@ -155,6 +195,12 @@ def get_publications_list(
                 LEFT JOIN (
                     SELECT doc_id, COUNT(*) AS t_count
                     FROM statistical_tables
+                    WHERE table_title ~* '^(tabel|table)\\s+[\\d\\.]*'
+                      AND table_title !~* '\\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\\b'
+                      AND table_title !~ '\\.{3,}'
+                      AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab|kata\\s+pengantar|puji\\s+syukur|tim\\s+penyusun|gambar|berakhlak)'
+                      AND table_title !~ '[\\-\\,\\/]$'
+                      AND table_title !~ '^[a-z]'
                     GROUP BY doc_id
                 ) s ON p.publication_id = s.doc_id
                 WHERE {where_sql}
@@ -210,7 +256,7 @@ def get_publication_tables(doc_id: str) -> Dict[str, Any]:
             cur.execute("""
                 SELECT table_id, doc_id, table_title, halaman, tahun, kecamatan,
                        jsonb_array_length(records) AS row_count, jsonb_array_length(kolom) AS column_count,
-                       satuan, sumber, created_at
+                       satuan, sumber, created_at, kolom, records
                 FROM statistical_tables
                 WHERE doc_id = %s
                 ORDER BY halaman ASC, table_id ASC;
@@ -221,7 +267,7 @@ def get_publication_tables(doc_id: str) -> Dict[str, Any]:
             for r in rows:
                 title = r[2] or ""
                 # Strict statistical table validation filter
-                if not is_valid_statistical_table(title, r[6] or 0, r[7] or 0):
+                if not is_valid_statistical_table(title, r[6] or 0, r[7] or 0, cols=r[11], records=r[12]):
                     continue
 
                 items.append({
@@ -268,6 +314,12 @@ def verify_publication(doc_id: str) -> Dict[str, Any]:
                 LEFT JOIN (
                     SELECT doc_id, COUNT(*) AS t_count
                     FROM statistical_tables
+                    WHERE table_title ~* '^(tabel|table)\\s+[\\d\\.]*'
+                      AND table_title !~* '\\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\\b'
+                      AND table_title !~ '\\.{3,}'
+                      AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab|kata\\s+pengantar|puji\\s+syukur|tim\\s+penyusun|gambar|berakhlak)'
+                      AND table_title !~ '[\\-\\,\\/]$'
+                      AND table_title !~ '^[a-z]'
                     GROUP BY doc_id
                 ) s ON p.publication_id = s.doc_id
                 WHERE p.publication_id = %s
@@ -382,15 +434,18 @@ def get_statistical_tables(
                 (
                     table_title !~ '^[a-z]'
                     AND table_title !~ '[\\-\\,\\/]$'
-                    AND table_title !~ '\\.{4,}'
-                    AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab\\s+[ivxlcdm]+|kata\\s+pengantar|puji\\s+syukur|issn|undang-undang|gambar\\s+\\d+)'
+                    AND table_title !~ '\\.{3,}'
+                    AND table_title !~* '\\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\\b'
+                    AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab\\s+[ivxlcdm]+|kata\\s+pengantar|puji\\s+syukur|issn|undang-undang|gambar\\s+\\d+|tim\\s+penyusun|berakhlak)'
                     AND table_title !~* '^\\d+\\.\\d+\\.?\\s*(latar|maksud|tujuan|metodologi|ruang\\s+lingkup|sistematika|kesimpulan|saran)'
                     AND table_title !~* 'badan pusat statistik'
                     AND (
-                        table_title ~* '^(tabel|table|\\d+\\.[\\d\\.]*)\\s+'
-                        OR table_title ~* '^(jumlah|luas|banyaknya|persentase|produksi|populasi|rata-rata|distribusi|indikator|perkembangan|proyeksi)\\s+'
+                        table_title ~* '^(tabel|table)\\s+[\\d\\.]*'
+                        OR (
+                            table_title ~* '^(jumlah|luas|banyaknya|persentase|produksi|populasi|rata-rata|distribusi|indikator|perkembangan|proyeksi)\\s+'
+                            AND table_title !~* '[a-zA-Z]\\.\\s+[a-zA-Z]'
+                        )
                     )
-                    AND jsonb_array_length(records) >= 2
                 )
             """)
 

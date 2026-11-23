@@ -293,8 +293,16 @@
                           <span>Daftar Tabel Statistik: {{ pub.judul }}</span>
                         </span>
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-200">
-                          {{ (pubTablesCache[pub.doc_id] || []).length }} Tabel Ditemukan
+                          {{ (pubTablesCache[pub.doc_id] || []).length }} Tabel Valid
                         </span>
+                        <button
+                          type="button"
+                          @click.stop="refreshPublicationTables(pub.doc_id)"
+                          class="p-1 rounded text-slate-400 hover:text-sky-700 hover:bg-sky-100 transition cursor-pointer"
+                          title="Muat ulang tabel publikasi"
+                        >
+                          <RefreshCw class="w-3 h-3" :class="{ 'animate-spin': isLoadingTables[pub.doc_id] }" />
+                        </button>
                       </div>
                       <span class="text-[11px] text-slate-400">
                         Klik <strong>"Proof of Data"</strong> untuk inspeksi sel mentah & representasi semantik LLM.
@@ -785,6 +793,7 @@ function debounceFetch() {
 async function fetchData() {
   isLoading.value = true
   errorMessage.value = ''
+  pubTablesCache.value = {}
   try {
     const params = {
       search: filterSearch.value || undefined,
@@ -837,17 +846,21 @@ async function togglePublication(docId) {
     expandedPubIds.value.add(docId)
     // Fetch tables if not cached
     if (!pubTablesCache.value[docId]) {
-      isLoadingTables.value[docId] = true
-      try {
-        const res = await getPublicationTables(docId)
-        pubTablesCache.value[docId] = res.items || []
-      } catch (err) {
-        console.error(`Error fetching tables for publication ${docId}:`, err)
-        pubTablesCache.value[docId] = []
-      } finally {
-        isLoadingTables.value[docId] = false
-      }
+      await refreshPublicationTables(docId)
     }
+  }
+}
+
+async function refreshPublicationTables(docId) {
+  isLoadingTables.value[docId] = true
+  try {
+    const res = await getPublicationTables(docId)
+    pubTablesCache.value[docId] = res.items || []
+  } catch (err) {
+    console.error(`Error fetching tables for publication ${docId}:`, err)
+    pubTablesCache.value[docId] = []
+  } finally {
+    isLoadingTables.value[docId] = false
   }
 }
 
