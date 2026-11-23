@@ -37,6 +37,75 @@ class LLMClient:
             logger.warning(f"[LLMClient] Unknown provider '{self.provider}'. Falling back to mock.")
             return self._generate_mock(prompt, system_prompt, reason=f"Unsupported provider {self.provider}")
 
+    def stream_generate(self, prompt: str, system_prompt: str):
+        """Yields text tokens in real time from the configured provider."""
+        if self.provider == "gemini":
+            api_key = bot_config.GEMINI_API_KEY or os.getenv("GEMINI_API_KEY")
+            if not api_key:
+                yield self._generate_mock(prompt, system_prompt, reason="GEMINI_API_KEY is not set in .env")
+                return
+            yield from self._stream_gemini(prompt, system_prompt, api_key)
+        else:
+            yield self.generate(prompt, system_prompt)
+
+    def _stream_gemini(self, prompt: str, system_prompt: str, api_key: str):
+        """Streams text chunks directly from Google Gemini REST SSE API."""
+        import json
+        primary_model = bot_config.GEMINI_MODEL or "gemini-3.1-flash-lite"
+        candidates_to_try = [primary_model]
+        for backup in ["gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3.5-flash"]:
+            if backup not in candidates_to_try:
+                candidates_to_try.append(backup)
+
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": api_key
+        }
+
+        for model in candidates_to_try:
+            gen_config = {
+                "temperature": bot_config.TEMPERATURE,
+                "maxOutputTokens": bot_config.MAX_TOKENS
+            }
+            if "thinking" in model.lower():
+                gen_config["thinkingConfig"] = {"thinkingBudget": 1024}
+
+            payload = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "systemInstruction": {"parts": [{"text": system_prompt}]},
+                "generationConfig": gen_config
+            }
+
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:streamGenerateContent"
+            try:
+                with self.client.stream("POST", url, headers=headers, params={"alt": "sse"}, json=payload) as resp:
+                    if resp.status_code == 200:
+                        streamed_any = False
+                        for line in resp.iter_lines():
+                            if line.startswith("data: "):
+                                data_str = line[6:].strip()
+                                if not data_str:
+                                    continue
+                                try:
+                                    d = json.loads(data_str)
+                                    parts = d.get("candidates", [{}])[0].get("content", {}).get("parts", [])
+                                    for p in parts:
+                                        t = p.get("text", "")
+                                        if t and not p.get("thought", False):
+                                            streamed_any = True
+                                            yield t
+                                except Exception:
+                                    pass
+                        if streamed_any:
+                            return
+                    else:
+                        logger.warning(f"[LLMClient Stream] Model {model} status {resp.status_code}. Retrying...")
+            except Exception as e:
+                logger.warning(f"[LLMClient Stream] Model {model} failed: {e}. Retrying...")
+
+        # Fallback to non-streaming generate if stream failed
+        yield self.generate(prompt, system_prompt)
+
     def _call_gemini(self, prompt: str, system_prompt: str, api_key: str) -> str:
         """Calls Google Gemini REST API with automatic resilient fallback."""
         primary_model = bot_config.GEMINI_MODEL or "gemini-3.1-flash-lite"

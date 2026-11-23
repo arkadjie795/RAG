@@ -77,12 +77,23 @@ try:
         version="2.0.0"
     )
 
-    # Allow CORS for Frontend development & local serving
+    # Whitelist trusted origins: local development, BPS intranet, and official portals
+    ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://10.133.21.24",
+        "http://10.133.21.24:8000",
+        "http://10.133.21.24:5173",
+        "https://demakkab.bps.go.id"
+    ]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 
@@ -114,6 +125,33 @@ try:
     def api_chat(req: ChatRequest):
         res = handle_chat_request(req.model_dump())
         return res
+
+    @app.post("/api/chat/stream")
+    def api_chat_stream(req: ChatRequest):
+        import json
+        from fastapi.responses import StreamingResponse
+        bot = get_chatbot()
+
+        def event_generator():
+            for event in bot.stream_ask(
+                question=req.message,
+                session_id=req.session_id or "default",
+                daerah=req.daerah,
+                tahun=req.tahun,
+                kategori=req.kategori,
+                top_k=req.top_k
+            ):
+                yield f"data: {json.dumps(event)}\n\n"
+
+        return StreamingResponse(
+            event_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no"
+            }
+        )
 
     @app.delete("/api/session/{session_id}")
     def api_clear_session(session_id: str):

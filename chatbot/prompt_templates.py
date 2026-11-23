@@ -61,7 +61,10 @@ Instruksi:
 2. JANGAN PERNAH MENGARANG ATAU MEMALSUKAN NAMA PEJABAT, NAMA TOKOH, ATAU DATA STATISTIK! Jika nama pejabat atau data yang ditanyakan tidak tertulis secara eksplisit dalam konteks referensi, nyatakan secara jujur bahwa informasi tersebut tidak ditemukan dalam dokumen BPS yang tersedia, jangan pernah menciptakan nama fiktif.
 3. Jika pertanyaan merujuk pada konteks sebelumnya (seperti menanyakan tahun lain atau kecamatan lain), gunakan [RIWAYAT PERCAKAPAN SEBELUMNYA] untuk melengkapi topik yang dimaksud.
 4. Sertakan angka statistik yang presisi dengan satuan yang jelas (ton, ha, jiwa, ekor, kg, rupiah, dll).
-5. Di akhir jawaban, cantumkan sitasi judul publikasi BPS beserta nomor tabel/halaman."""
+5. Untuk pertanyaan perhitungan atau agregasi (misalnya: total seluruh 14 kecamatan di Demak, rata-rata, ranking tertinggi/terendah):
+   - Gunakan data baris per baris dalam tabel pada [KONTEKS DATA BPS TERVERIFIKASI].
+   - Lakukan penjumlahan/perhitungan secara cermat dan sebutkan rincian angkanya secara eksplisit.
+6. Di akhir jawaban, cantumkan sitasi judul publikasi BPS beserta nomor tabel/halaman."""
 
 
 # Template for general dialogue, greetings, or statistical concept explanations

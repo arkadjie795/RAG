@@ -108,13 +108,38 @@
 
         <!-- Telemetry Status Pills -->
         <div class="flex items-center space-x-2">
-          <!-- PostgreSQL Status Pill -->
-          <div class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <!-- PostgreSQL Status Pill (Live / Dynamic) -->
+          <div
+            v-if="dbConnected === true"
+            class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"
+            title="Basis data PostgreSQL terhubung aktif"
+          >
             <span class="relative flex h-2 w-2">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span class="font-mono text-[11px]">10.133.21.24 (bps_rag3321)</span>
+            <span class="font-mono text-[11px]">{{ dbHost }} ({{ dbName }})</span>
+          </div>
+
+          <div
+            v-else-if="dbConnected === false"
+            class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 text-rose-800 border border-rose-300"
+            :title="dbError ? `Koneksi Terputus: ${dbError}` : 'PostgreSQL tidak dapat dihubungi. Pastikan VPN FortiClient BPS aktif.'"
+          >
+            <span class="relative flex h-2 w-2">
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            </span>
+            <span class="font-mono text-[11px] font-bold">{{ dbHost }} (Terputus / Cek VPN)</span>
+          </div>
+
+          <div
+            v-else
+            class="inline-flex items-center space-x-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200"
+          >
+            <span class="relative flex h-2 w-2">
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
+            </span>
+            <span class="font-mono text-[11px]">Memeriksa DB...</span>
           </div>
 
           <!-- Model Tag -->
@@ -143,12 +168,31 @@ import {
   LogOut,
   ExternalLink
 } from 'lucide-vue-next'
-import { getCachedUser, checkAuthStatus, logoutAdmin } from '../lib/api'
+import { getCachedUser, checkAuthStatus, logoutAdmin, getSystemHealth } from '../lib/api'
 
 const router = useRouter()
 const currentUser = ref(getCachedUser())
 
+const dbConnected = ref(null)
+const dbHost = ref('10.133.21.24')
+const dbName = ref('bps_rag3321')
+const dbError = ref('')
+
+async function checkHealth() {
+  try {
+    const res = await getSystemHealth()
+    dbConnected.value = res.database_connected
+    if (res.database_host) dbHost.value = res.database_host
+    if (res.database_name) dbName.value = res.database_name
+    dbError.value = res.db_error || ''
+  } catch (err) {
+    dbConnected.value = false
+    dbError.value = err.message
+  }
+}
+
 onMounted(async () => {
+  checkHealth()
   try {
     const res = await checkAuthStatus()
     if (res.authenticated) {

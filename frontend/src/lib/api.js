@@ -64,6 +64,46 @@ export async function sendPublicChatMessage(payload) {
   });
 }
 
+export async function streamPublicChatMessage(payload, onChunk, onMetadata) {
+  const response = await fetch('/api/chat/stream', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('data: ')) {
+        try {
+          const parsed = JSON.parse(trimmed.slice(6));
+          if (parsed.type === 'token' && onChunk) {
+            onChunk(parsed.token);
+          } else if (parsed.type === 'metadata' && onMetadata) {
+            onMetadata(parsed);
+          }
+        } catch (e) {
+          console.warn('SSE parse error:', e);
+        }
+      }
+    }
+  }
+}
+
 // ==========================================
 // AUTH & SIPETRA SSO API
 // ==========================================
@@ -131,6 +171,14 @@ function buildCleanQuery(params = {}) {
 
 export async function getPublications(params = {}) {
   return request(`/api/data/publications${buildCleanQuery(params)}`);
+}
+
+export async function getPublicationTables(docId) {
+  return request(`/api/data/publication/${encodeURIComponent(docId)}/tables`);
+}
+
+export async function verifyPublication(docId) {
+  return request(`/api/data/publication/${encodeURIComponent(docId)}/verify`);
 }
 
 export async function getStatisticalTables(params = {}) {

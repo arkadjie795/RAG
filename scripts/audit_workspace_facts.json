@@ -1,0 +1,804 @@
+{
+  "requirements": [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "python-multipart>=0.0.9",
+    "requests>=2.31.0",
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.3",
+    "lxml>=5.1.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.1",
+    "tqdm>=4.66.2",
+    "pdfplumber>=0.10.4",
+    "pypdf>=4.1.0",
+    "pdfminer.six>=20231228",
+    "pandas>=2.2.1",
+    "numpy>=1.26.4",
+    "openpyxl>=3.1.2",
+    "sentence-transformers>=2.5.1",
+    "tiktoken>=0.6.0",
+    "torch>=2.2.0",
+    "psycopg2-binary>=2.9.9",
+    "pgvector>=0.2.5",
+    "chromadb>=0.4.24",
+    "loguru>=0.7.2",
+    "tabulate>=0.9.0",
+    "pytest>=7.4.0"
+  ],
+  "frontend_deps": {
+    "@lucide/vue": "^1.49.0",
+    "clsx": "^2.1.1",
+    "lucide-vue-next": "^1.0.0",
+    "tailwind-merge": "^3.7.0",
+    "vue": "^3.5.42",
+    "vue-router": "^4.6.4"
+  },
+  "frontend_dev_deps": {
+    "@vitejs/plugin-vue": "^6.0.8",
+    "autoprefixer": "^10.6.1",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.17",
+    "vite": "^8.3.0"
+  },
+  "code_inventory": [
+    {
+      "path": "chatbot/api.py",
+      "loc": 160,
+      "classes": [
+        "ChatRequest"
+      ],
+      "functions": [
+        "get_chatbot",
+        "handle_chat_request",
+        "top_level_auth_callback",
+        "api_chat",
+        "api_clear_session",
+        "api_health"
+      ]
+    },
+    {
+      "path": "chatbot/bot.py",
+      "loc": 255,
+      "classes": [
+        "BPSChatbot"
+      ],
+      "functions": [
+        "is_conversational_or_greeting",
+        "__init__",
+        "_async_warmup",
+        "_resolve_followup_query",
+        "ask",
+        "clear_memory"
+      ]
+    },
+    {
+      "path": "chatbot/cli.py",
+      "loc": 156,
+      "classes": [],
+      "functions": [
+        "print_banner",
+        "print_welcome_introduction",
+        "run_cli"
+      ]
+    },
+    {
+      "path": "chatbot/config.py",
+      "loc": 49,
+      "classes": [
+        "ChatbotConfig",
+        "Config"
+      ],
+      "functions": []
+    },
+    {
+      "path": "chatbot/llm_client.py",
+      "loc": 163,
+      "classes": [
+        "LLMClient"
+      ],
+      "functions": [
+        "__init__",
+        "generate",
+        "_call_gemini",
+        "_call_openai_compatible",
+        "_generate_mock"
+      ]
+    },
+    {
+      "path": "chatbot/memory.py",
+      "loc": 69,
+      "classes": [
+        "ChatSession",
+        "SessionManager"
+      ],
+      "functions": [
+        "__init__",
+        "add_user_message",
+        "add_assistant_message",
+        "_truncate",
+        "format_for_prompt",
+        "clear",
+        "__init__",
+        "get_or_create",
+        "clear_session"
+      ]
+    },
+    {
+      "path": "chatbot/prompt_templates.py",
+      "loc": 74,
+      "classes": [],
+      "functions": [
+        "format_rag_context"
+      ]
+    },
+    {
+      "path": "chatbot/rag_feeder.py",
+      "loc": 239,
+      "classes": [
+        "RAGFeeder"
+      ],
+      "functions": [
+        "__init__",
+        "warm_up",
+        "_extract_year_from_query",
+        "_load_granular_table_preview",
+        "feed_context"
+      ]
+    },
+    {
+      "path": "chatbot/__init__.py",
+      "loc": 29,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "api/routers/auth.py",
+      "loc": 186,
+      "classes": [
+        "MockLoginRequest"
+      ],
+      "functions": [
+        "create_token",
+        "verify_token",
+        "get_current_user",
+        "mock_login",
+        "sipetra_redirect",
+        "sipetra_callback",
+        "logout"
+      ]
+    },
+    {
+      "path": "api/routers/data_viewer.py",
+      "loc": 217,
+      "classes": [],
+      "functions": [
+        "get_publications_list",
+        "get_statistical_tables",
+        "get_table_detail"
+      ]
+    },
+    {
+      "path": "api/routers/ingestion.py",
+      "loc": 203,
+      "classes": [
+        "ScraperRunRequest",
+        "IngestionJobState"
+      ],
+      "functions": [
+        "_run_crawler_task",
+        "get_ingestion_status",
+        "run_ingestion",
+        "stop_ingestion",
+        "__init__",
+        "_append_log",
+        "log",
+        "reset",
+        "update",
+        "finish",
+        "to_dict",
+        "_on_progress"
+      ]
+    },
+    {
+      "path": "api/routers/system_telemetry.py",
+      "loc": 160,
+      "classes": [
+        "SearchTestRequest"
+      ],
+      "functions": [
+        "get_system_health",
+        "get_vector_observability_stats",
+        "test_hybrid_search",
+        "get_recent_system_logs"
+      ]
+    },
+    {
+      "path": "modules/__init__.py",
+      "loc": 3,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "modules/extraction/pdf_pipeline.py",
+      "loc": 71,
+      "classes": [
+        "PDFExtractionPipeline"
+      ],
+      "functions": [
+        "__init__",
+        "process_pdf"
+      ]
+    },
+    {
+      "path": "modules/extraction/table_cleaner.py",
+      "loc": 367,
+      "classes": [
+        "ValueStatus",
+        "StatisticalCell",
+        "TableCleaner"
+      ],
+      "functions": [
+        "clean_cell_text",
+        "detect_header_rows",
+        "flatten_multi_index_headers",
+        "parse_statistical_cell",
+        "sanitize_indonesian_numeric",
+        "clean_table_dataframe"
+      ]
+    },
+    {
+      "path": "modules/extraction/table_extractor.py",
+      "loc": 191,
+      "classes": [
+        "BPSTableExtractor"
+      ],
+      "functions": [
+        "__init__",
+        "_extract_table_context",
+        "extract_tables_from_pdf"
+      ]
+    },
+    {
+      "path": "modules/extraction/text_extractor.py",
+      "loc": 153,
+      "classes": [
+        "BPSTextExtractor"
+      ],
+      "functions": [
+        "__init__",
+        "_is_header_or_footer",
+        "extract_text_chunks_from_pdf"
+      ]
+    },
+    {
+      "path": "modules/extraction/__init__.py",
+      "loc": 14,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "modules/ingestion/bps_api_client.py",
+      "loc": 222,
+      "classes": [
+        "BPSWebApiClient"
+      ],
+      "functions": [
+        "__init__",
+        "_slugify",
+        "test_connection",
+        "fetch_publication_page",
+        "fetch_all_publications",
+        "download_publication_pdf",
+        "run_api_ingestion"
+      ]
+    },
+    {
+      "path": "modules/ingestion/bps_scraper.py",
+      "loc": 395,
+      "classes": [
+        "BPSPublicationScraper"
+      ],
+      "functions": [
+        "__init__",
+        "_slugify",
+        "_parse_indonesian_date",
+        "_fetch_url_text_curl",
+        "fetch_publication_list",
+        "resolve_pdf_download_url",
+        "download_pdf",
+        "run_ingestion_pipeline"
+      ]
+    },
+    {
+      "path": "modules/ingestion/registry.py",
+      "loc": 214,
+      "classes": [
+        "PublicationRegistry"
+      ],
+      "functions": [
+        "__init__",
+        "_get_connection",
+        "_init_db",
+        "is_already_downloaded",
+        "register_or_update_metadata",
+        "mark_download_success",
+        "mark_download_failed",
+        "mark_extraction_completed",
+        "is_already_extracted",
+        "get_pending_extractions",
+        "get_record_by_path",
+        "get_all_records"
+      ]
+    },
+    {
+      "path": "modules/ingestion/__init__.py",
+      "loc": 7,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "modules/retrieval/entity_dictionary.py",
+      "loc": 80,
+      "classes": [
+        "DemakEntityExtractor"
+      ],
+      "functions": [
+        "__init__",
+        "extract_entities"
+      ]
+    },
+    {
+      "path": "modules/retrieval/hybrid_search.py",
+      "loc": 120,
+      "classes": [
+        "HybridRetriever"
+      ],
+      "functions": [
+        "__init__",
+        "search"
+      ]
+    },
+    {
+      "path": "modules/retrieval/__init__.py",
+      "loc": 7,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "modules/storage/doc_store.py",
+      "loc": 390,
+      "classes": [
+        "DocumentStore"
+      ],
+      "functions": [
+        "__init__",
+        "_ensure_storage_exists",
+        "_read_db",
+        "_write_db",
+        "_slugify",
+        "save_table_json",
+        "save_narrative_json",
+        "save_document",
+        "get_document",
+        "get_table",
+        "list_documents",
+        "list_tables"
+      ]
+    },
+    {
+      "path": "modules/storage/postgres_migrator.py",
+      "loc": 34,
+      "classes": [
+        "PostgresMigrator"
+      ],
+      "functions": [
+        "__init__",
+        "run_migrations"
+      ]
+    },
+    {
+      "path": "modules/storage/postgres_store.py",
+      "loc": 178,
+      "classes": [
+        "PostgresVectorStore"
+      ],
+      "functions": [
+        "__init__",
+        "_sanitize_metadata",
+        "upsert_chunks",
+        "search_with_prefilter"
+      ]
+    },
+    {
+      "path": "modules/storage/vector_store.py",
+      "loc": 283,
+      "classes": [
+        "BPSVectorStore"
+      ],
+      "functions": [
+        "__init__",
+        "_init_chroma",
+        "_init_sqlite_vector_db",
+        "_sanitize_metadata",
+        "upsert_chunks",
+        "search_with_prefilter"
+      ]
+    },
+    {
+      "path": "modules/storage/__init__.py",
+      "loc": 7,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "modules/structuring/json_builder.py",
+      "loc": 245,
+      "classes": [
+        "JSONStructureBuilder"
+      ],
+      "functions": [
+        "__init__",
+        "_generate_chunk_id",
+        "_clean_column_label_for_speech",
+        "_build_table_row_text_representation",
+        "structure_table_chunks",
+        "structure_narrative_chunks",
+        "build_rag_chunks_from_extraction"
+      ]
+    },
+    {
+      "path": "modules/structuring/__init__.py",
+      "loc": 6,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "modules/vectorization/embedder.py",
+      "loc": 191,
+      "classes": [
+        "VectorEmbedder"
+      ],
+      "functions": [
+        "__init__",
+        "_init_model",
+        "_compute_hash",
+        "_get_cached_embeddings_pg",
+        "_save_cached_embeddings_pg",
+        "generate_embeddings",
+        "embed_rag_chunks"
+      ]
+    },
+    {
+      "path": "modules/vectorization/__init__.py",
+      "loc": 6,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/App.vue",
+      "loc": 9,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/main.js",
+      "loc": 8,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/router.js",
+      "loc": 120,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/style.css",
+      "loc": 30,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/layouts/AdminLayout.vue",
+      "loc": 166,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/layouts/PublicLayout.vue",
+      "loc": 70,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/lib/api.js",
+      "loc": 165,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/views/admin/AdminLoginView.vue",
+      "loc": 132,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/views/admin/DataExplorerView.vue",
+      "loc": 364,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/views/admin/IngestionHubView.vue",
+      "loc": 375,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/views/admin/SystemLogsView.vue",
+      "loc": 178,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/views/admin/VectorObservabilityView.vue",
+      "loc": 183,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "frontend/src/views/public/PublicChatView.vue",
+      "loc": 250,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/audit_db_consistency.py",
+      "loc": 50,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/breakdown_large_dirs.py",
+      "loc": 14,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/build_audit_export.py",
+      "loc": 581,
+      "classes": [],
+      "functions": [
+        "get_sha256",
+        "record_exclusion"
+      ]
+    },
+    {
+      "path": "scripts/check_columns.py",
+      "loc": 18,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/check_db_details.py",
+      "loc": 21,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/check_pub_sample.py",
+      "loc": 19,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/collect_audit_facts.py",
+      "loc": 185,
+      "classes": [],
+      "functions": [
+        "get_dir_stats"
+      ]
+    },
+    {
+      "path": "scripts/export_database_evidence.py",
+      "loc": 161,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/generate_docx_report.py",
+      "loc": 500,
+      "classes": [],
+      "functions": [
+        "set_cell_background",
+        "set_cell_margins",
+        "style_table",
+        "create_report",
+        "add_h1",
+        "add_h2"
+      ]
+    },
+    {
+      "path": "scripts/generate_project_structure_txt.py",
+      "loc": 115,
+      "classes": [],
+      "functions": [
+        "generate_structure"
+      ]
+    },
+    {
+      "path": "scripts/read_prompt.py",
+      "loc": 23,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/reconcile_publications.py",
+      "loc": 46,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/scan_inventory.py",
+      "loc": 33,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "scripts/verify_claims_db.py",
+      "loc": 56,
+      "classes": [],
+      "functions": []
+    },
+    {
+      "path": "tests/test_backend_api_routers.py",
+      "loc": 93,
+      "classes": [],
+      "functions": [
+        "test_public_chat_health",
+        "test_auth_status_and_login",
+        "test_sipetra_redirect_endpoint",
+        "test_ingestion_status_and_run",
+        "test_data_viewer_endpoints",
+        "test_system_telemetry_endpoints"
+      ]
+    },
+    {
+      "path": "tests/test_chatbot_integration.py",
+      "loc": 18,
+      "classes": [],
+      "functions": [
+        "test_chatbot_grounded_answer_pipeline",
+        "test_rag_feeder_hybrid_retrieval_routing"
+      ]
+    },
+    {
+      "path": "tests/test_embedder_cache.py",
+      "loc": 25,
+      "classes": [],
+      "functions": [
+        "test_embedder_caching_and_deterministic_storage",
+        "test_embedder_never_returns_random_hash"
+      ]
+    },
+    {
+      "path": "tests/test_extraction.py",
+      "loc": 67,
+      "classes": [
+        "TestTableCleaner"
+      ],
+      "functions": [
+        "test_flatten_multi_index_headers",
+        "test_indonesian_numeric_sanitization",
+        "test_clean_table_dataframe_with_ffill"
+      ]
+    },
+    {
+      "path": "tests/test_hybrid_retrieval.py",
+      "loc": 22,
+      "classes": [],
+      "functions": [
+        "test_demak_entity_extraction",
+        "test_hybrid_search_rrf_execution"
+      ]
+    },
+    {
+      "path": "tests/test_pipeline_e2e.py",
+      "loc": 105,
+      "classes": [
+        "TestStructuringAndDocStore"
+      ],
+      "functions": [
+        "test_table_json_structuring_and_text_representation"
+      ]
+    },
+    {
+      "path": "tests/test_postgres_connection.py",
+      "loc": 8,
+      "classes": [],
+      "functions": [
+        "test_postgres_connection_and_pgvector"
+      ]
+    },
+    {
+      "path": "tests/test_postgres_schema.py",
+      "loc": 19,
+      "classes": [],
+      "functions": [
+        "test_postgres_tables_exist"
+      ]
+    },
+    {
+      "path": "tests/test_postgres_store.py",
+      "loc": 33,
+      "classes": [],
+      "functions": [
+        "test_postgres_vector_store_crud_and_search"
+      ]
+    },
+    {
+      "path": "tests/test_statistical_semantics.py",
+      "loc": 55,
+      "classes": [],
+      "functions": [
+        "test_statistical_symbol_semantics",
+        "test_clean_table_dataframe_preserves_semantics"
+      ]
+    },
+    {
+      "path": "tests/benchmarks/test_golden_benchmark.py",
+      "loc": 71,
+      "classes": [],
+      "functions": [
+        "golden_cases",
+        "warmed_bot",
+        "test_golden_dataset_structure",
+        "test_conversational_and_abstention_benchmark",
+        "test_statistical_retrieval_benchmark"
+      ]
+    }
+  ],
+  "disk_stats": {
+    "data_publikasi": {
+      "exists": true,
+      "files": 587,
+      "size_mb": 2689.87
+    },
+    "database": {
+      "exists": true,
+      "files": 216172,
+      "size_mb": 8789.26
+    },
+    "database/chroma_store": {
+      "exists": true,
+      "files": 7,
+      "size_mb": 4171.74
+    },
+    "database/documents": {
+      "exists": true,
+      "files": 578,
+      "size_mb": 1400.2
+    },
+    "database/tables": {
+      "exists": true,
+      "files": 30273,
+      "size_mb": 1567.59
+    },
+    "chatbot/static": {
+      "exists": false,
+      "files": 0,
+      "size_mb": 0
+    },
+    "database/bps_documents.json": {
+      "exists": true,
+      "size_mb": 1416.71
+    },
+    "RAG_BPS_DEMAK_AUDIT_EXPORT/PDF_PUBLICATIONS_CATALOG.json": {
+      "exists": true,
+      "size_mb": 0.21
+    }
+  },
+  "db_error": "No module named 'modules.core'"
+}

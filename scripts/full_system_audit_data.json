@@ -1,0 +1,1778 @@
+{
+  "sqlite": {
+    "database/bps_registry.db": {
+      "size_bytes": 454656,
+      "tables": {
+        "publications": {
+          "count": 588,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "publication_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "title",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "release_date",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "category",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "pdf_url",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "local_file_path",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 6,
+              "name": "file_size_bytes",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 7,
+              "name": "download_status",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 8,
+              "name": "extraction_status",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 9,
+              "name": "total_tables_extracted",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 10,
+              "name": "total_chunks_indexed",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 11,
+              "name": "created_at",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 12,
+              "name": "updated_at",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "idx_pub_status",
+              0,
+              "c",
+              0
+            ],
+            [
+              1,
+              "sqlite_autoindex_publications_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "database/tables_index.db": {
+      "size_bytes": 12185600,
+      "tables": {
+        "tables_catalog": {
+          "count": 21368,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "table_path",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "doc_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "doc_title",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "tahun",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "kecamatan",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "judul_tabel",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 6,
+              "name": "kolom",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "idx_kecamatan",
+              0,
+              "c",
+              0
+            ],
+            [
+              1,
+              "idx_tahun",
+              0,
+              "c",
+              0
+            ],
+            [
+              2,
+              "sqlite_autoindex_tables_catalog_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        }
+      }
+    },
+    "database/chroma_store/chroma.sqlite3": {
+      "size_bytes": 3120676864,
+      "tables": {
+        "migrations": {
+          "count": 18,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "dir",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "version",
+              "type": "INTEGER",
+              "notnull": 1,
+              "pk": 2
+            },
+            {
+              "cid": 2,
+              "name": "filename",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "sql",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "hash",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_migrations_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "acquire_write": {
+          "count": 72,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "lock_status",
+              "type": "INTEGER",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        },
+        "collection_metadata": {
+          "count": 1,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "collection_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "key",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 2
+            },
+            {
+              "cid": 2,
+              "name": "str_value",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "int_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "float_value",
+              "type": "REAL",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "bool_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_collection_metadata_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "segment_metadata": {
+          "count": 0,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "segment_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "key",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 2
+            },
+            {
+              "cid": 2,
+              "name": "str_value",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "int_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "float_value",
+              "type": "REAL",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "bool_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_segment_metadata_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "tenants": {
+          "count": 1,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_tenants_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "databases": {
+          "count": 1,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "name",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "tenant_id",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_databases_2",
+              1,
+              "u",
+              0
+            ],
+            [
+              1,
+              "sqlite_autoindex_databases_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "collections": {
+          "count": 1,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "name",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "dimension",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "database_id",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "config_json_str",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "schema_str",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_collections_2",
+              1,
+              "u",
+              0
+            ],
+            [
+              1,
+              "sqlite_autoindex_collections_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "maintenance_log": {
+          "count": 0,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "timestamp",
+              "type": "INT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "operation",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_maintenance_log_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "segments": {
+          "count": 2,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "type",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "scope",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "collection",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_segments_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "embeddings": {
+          "count": 683529,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "segment_id",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "embedding_id",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "seq_id",
+              "type": "BLOB",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "created_at",
+              "type": "TIMESTAMP",
+              "notnull": 1,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_embeddings_1",
+              1,
+              "u",
+              0
+            ]
+          ]
+        },
+        "embedding_metadata": {
+          "count": 9968013,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "key",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 2
+            },
+            {
+              "cid": 2,
+              "name": "string_value",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "int_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "float_value",
+              "type": "REAL",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "bool_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "embedding_metadata_string_value",
+              0,
+              "c",
+              1
+            ],
+            [
+              1,
+              "embedding_metadata_float_value",
+              0,
+              "c",
+              1
+            ],
+            [
+              2,
+              "embedding_metadata_int_value",
+              0,
+              "c",
+              1
+            ],
+            [
+              3,
+              "sqlite_autoindex_embedding_metadata_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "max_seq_id": {
+          "count": 2,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "segment_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "seq_id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_max_seq_id_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "embedding_fulltext_search": {
+          "count": 683529,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "string_value",
+              "type": "",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        },
+        "embedding_fulltext_search_data": {
+          "count": 163612,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "block",
+              "type": "BLOB",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        },
+        "embedding_fulltext_search_idx": {
+          "count": 21648,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "segid",
+              "type": "",
+              "notnull": 1,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "term",
+              "type": "",
+              "notnull": 1,
+              "pk": 2
+            },
+            {
+              "cid": 2,
+              "name": "pgno",
+              "type": "",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_embedding_fulltext_search_idx_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "embedding_fulltext_search_content": {
+          "count": 683529,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "c0",
+              "type": "",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        },
+        "embedding_fulltext_search_docsize": {
+          "count": 683529,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "sz",
+              "type": "BLOB",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        },
+        "embedding_fulltext_search_config": {
+          "count": 1,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "k",
+              "type": "",
+              "notnull": 1,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "v",
+              "type": "",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "sqlite_autoindex_embedding_fulltext_search_config_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        },
+        "embedding_metadata_array": {
+          "count": 0,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 1,
+              "name": "key",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "string_value",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "int_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "float_value",
+              "type": "REAL",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "bool_value",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "embedding_metadata_array_key_float",
+              0,
+              "c",
+              1
+            ],
+            [
+              1,
+              "embedding_metadata_array_key_int",
+              0,
+              "c",
+              1
+            ],
+            [
+              2,
+              "embedding_metadata_array_key_string",
+              0,
+              "c",
+              1
+            ],
+            [
+              3,
+              "embedding_metadata_array_id_key",
+              0,
+              "c",
+              0
+            ]
+          ]
+        },
+        "embeddings_queue": {
+          "count": 548,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "seq_id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "created_at",
+              "type": "TIMESTAMP",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "operation",
+              "type": "INTEGER",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "topic",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "id",
+              "type": "TEXT",
+              "notnull": 1,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "vector",
+              "type": "BLOB",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 6,
+              "name": "encoding",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 7,
+              "name": "metadata",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        },
+        "embeddings_queue_config": {
+          "count": 1,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "id",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "config_json_str",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": []
+        }
+      }
+    },
+    "database/chroma_store/vector_store.sqlite": {
+      "size_bytes": 958464,
+      "tables": {
+        "vector_chunks": {
+          "count": 95,
+          "columns": [
+            {
+              "cid": 0,
+              "name": "chunk_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 1
+            },
+            {
+              "cid": 1,
+              "name": "dokumen_id",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 2,
+              "name": "dokumen_sumber",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 3,
+              "name": "daerah",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 4,
+              "name": "kategori",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 5,
+              "name": "tahun",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 6,
+              "name": "halaman",
+              "type": "INTEGER",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 7,
+              "name": "tipe_konten",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 8,
+              "name": "judul_tabel",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 9,
+              "name": "satuan",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 10,
+              "name": "sumber",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 11,
+              "name": "representasi_teks",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 12,
+              "name": "metadata_json",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            },
+            {
+              "cid": 13,
+              "name": "embedding_json",
+              "type": "TEXT",
+              "notnull": 0,
+              "pk": 0
+            }
+          ],
+          "indexes": [
+            [
+              0,
+              "idx_v_tipe",
+              0,
+              "c",
+              0
+            ],
+            [
+              1,
+              "idx_v_kategori",
+              0,
+              "c",
+              0
+            ],
+            [
+              2,
+              "idx_v_tahun",
+              0,
+              "c",
+              0
+            ],
+            [
+              3,
+              "idx_v_daerah",
+              0,
+              "c",
+              0
+            ],
+            [
+              4,
+              "sqlite_autoindex_vector_chunks_1",
+              1,
+              "pk",
+              0
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "chroma": {
+    "exists": true,
+    "size_mb": 4171.74,
+    "collections": {
+      "bps_demak_knowledge": {
+        "count": 683529,
+        "metadata": {
+          "hnsw:space": "cosine"
+        }
+      }
+    }
+  },
+  "postgresql": {
+    "version": "PostgreSQL 15.14 (Debian 15.14-1.pgdg12+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 12.2.0-14+deb12u1) 12.2.0, 64-bit",
+    "extensions": [
+      [
+        "plpgsql",
+        "1.0"
+      ],
+      [
+        "vector",
+        "0.8.1"
+      ]
+    ],
+    "tables": {
+      "embedding_cache": {
+        "count": 215248,
+        "columns": [
+          {
+            "name": "text_hash",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "model_name",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "embedding",
+            "type": "USER-DEFINED",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "embedding_cache_pkey",
+            "def": "CREATE UNIQUE INDEX embedding_cache_pkey ON public.embedding_cache USING btree (text_hash)"
+          },
+          {
+            "name": "idx_emb_cache_model",
+            "def": "CREATE INDEX idx_emb_cache_model ON public.embedding_cache USING btree (model_name)"
+          }
+        ]
+      },
+      "publications": {
+        "count": 589,
+        "columns": [
+          {
+            "name": "publication_id",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "title",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "release_date",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "category",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'Umum'::text"
+          },
+          {
+            "name": "pdf_url",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "local_file_path",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "file_size_bytes",
+            "type": "bigint",
+            "nullable": "YES",
+            "default": "0"
+          },
+          {
+            "name": "checksum_sha256",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "download_status",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'PENDING'::text"
+          },
+          {
+            "name": "extraction_status",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'PENDING'::text"
+          },
+          {
+            "name": "total_tables_extracted",
+            "type": "integer",
+            "nullable": "YES",
+            "default": "0"
+          },
+          {
+            "name": "total_chunks_indexed",
+            "type": "integer",
+            "nullable": "YES",
+            "default": "0"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "publications_pkey",
+            "def": "CREATE UNIQUE INDEX publications_pkey ON public.publications USING btree (publication_id)"
+          },
+          {
+            "name": "idx_pub_status",
+            "def": "CREATE INDEX idx_pub_status ON public.publications USING btree (download_status, extraction_status)"
+          },
+          {
+            "name": "idx_pub_category",
+            "def": "CREATE INDEX idx_pub_category ON public.publications USING btree (category)"
+          }
+        ]
+      },
+      "statistical_tables": {
+        "count": 30272,
+        "columns": [
+          {
+            "name": "table_id",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "doc_id",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "doc_title",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "table_number",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "table_title",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "halaman",
+            "type": "integer",
+            "nullable": "YES",
+            "default": "1"
+          },
+          {
+            "name": "kecamatan",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'Kabupaten Demak'::text"
+          },
+          {
+            "name": "tahun",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "satuan",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'N/A'::text"
+          },
+          {
+            "name": "sumber",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'BPS Kabupaten Demak'::text"
+          },
+          {
+            "name": "catatan",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "kolom",
+            "type": "jsonb",
+            "nullable": "YES",
+            "default": "'[]'::jsonb"
+          },
+          {
+            "name": "records",
+            "type": "jsonb",
+            "nullable": "YES",
+            "default": "'[]'::jsonb"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "statistical_tables_pkey",
+            "def": "CREATE UNIQUE INDEX statistical_tables_pkey ON public.statistical_tables USING btree (table_id)"
+          },
+          {
+            "name": "idx_st_doc_id",
+            "def": "CREATE INDEX idx_st_doc_id ON public.statistical_tables USING btree (doc_id)"
+          },
+          {
+            "name": "idx_st_kecamatan",
+            "def": "CREATE INDEX idx_st_kecamatan ON public.statistical_tables USING btree (kecamatan)"
+          },
+          {
+            "name": "idx_st_tahun",
+            "def": "CREATE INDEX idx_st_tahun ON public.statistical_tables USING btree (tahun)"
+          }
+        ]
+      },
+      "vector_chunks": {
+        "count": 218717,
+        "columns": [
+          {
+            "name": "chunk_id",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "doc_id",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "table_id",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "tipe_konten",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'tabel_baris'::text"
+          },
+          {
+            "name": "daerah",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'Kabupaten Demak'::text"
+          },
+          {
+            "name": "kategori",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'Umum'::text"
+          },
+          {
+            "name": "tahun",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "halaman",
+            "type": "integer",
+            "nullable": "YES",
+            "default": "1"
+          },
+          {
+            "name": "judul_tabel",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "satuan",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'N/A'::text"
+          },
+          {
+            "name": "sumber",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'BPS Kabupaten Demak'::text"
+          },
+          {
+            "name": "representasi_teks",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "metadata",
+            "type": "jsonb",
+            "nullable": "YES",
+            "default": "'{}'::jsonb"
+          },
+          {
+            "name": "embedding",
+            "type": "USER-DEFINED",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "tsv",
+            "type": "tsvector",
+            "nullable": "YES",
+            "default": null
+          }
+        ],
+        "indexes": [
+          {
+            "name": "vector_chunks_pkey",
+            "def": "CREATE UNIQUE INDEX vector_chunks_pkey ON public.vector_chunks USING btree (chunk_id)"
+          },
+          {
+            "name": "idx_chunks_embedding_hnsw",
+            "def": "CREATE INDEX idx_chunks_embedding_hnsw ON public.vector_chunks USING hnsw (embedding vector_cosine_ops)"
+          },
+          {
+            "name": "idx_chunks_tsv",
+            "def": "CREATE INDEX idx_chunks_tsv ON public.vector_chunks USING gin (tsv)"
+          },
+          {
+            "name": "idx_chunks_daerah",
+            "def": "CREATE INDEX idx_chunks_daerah ON public.vector_chunks USING btree (daerah)"
+          },
+          {
+            "name": "idx_chunks_tahun",
+            "def": "CREATE INDEX idx_chunks_tahun ON public.vector_chunks USING btree (tahun)"
+          },
+          {
+            "name": "idx_chunks_kategori",
+            "def": "CREATE INDEX idx_chunks_kategori ON public.vector_chunks USING btree (kategori)"
+          },
+          {
+            "name": "idx_chunks_tipe",
+            "def": "CREATE INDEX idx_chunks_tipe ON public.vector_chunks USING btree (tipe_konten)"
+          }
+        ]
+      },
+      "chat_sessions": {
+        "count": 1,
+        "columns": [
+          {
+            "name": "session_id",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "title",
+            "type": "text",
+            "nullable": "YES",
+            "default": "'Percakapan Baru'::text"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          },
+          {
+            "name": "updated_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "chat_sessions_pkey",
+            "def": "CREATE UNIQUE INDEX chat_sessions_pkey ON public.chat_sessions USING btree (session_id)"
+          }
+        ]
+      },
+      "chat_messages": {
+        "count": 2,
+        "columns": [
+          {
+            "name": "message_id",
+            "type": "integer",
+            "nullable": "NO",
+            "default": "nextval('chat_messages_message_id_seq'::regclass)"
+          },
+          {
+            "name": "session_id",
+            "type": "text",
+            "nullable": "YES",
+            "default": null
+          },
+          {
+            "name": "role",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "content",
+            "type": "text",
+            "nullable": "NO",
+            "default": null
+          },
+          {
+            "name": "citations",
+            "type": "jsonb",
+            "nullable": "YES",
+            "default": "'[]'::jsonb"
+          },
+          {
+            "name": "created_at",
+            "type": "timestamp with time zone",
+            "nullable": "YES",
+            "default": "now()"
+          }
+        ],
+        "indexes": [
+          {
+            "name": "chat_messages_pkey",
+            "def": "CREATE UNIQUE INDEX chat_messages_pkey ON public.chat_messages USING btree (message_id)"
+          },
+          {
+            "name": "idx_chat_msg_session",
+            "def": "CREATE INDEX idx_chat_msg_session ON public.chat_messages USING btree (session_id, created_at)"
+          }
+        ]
+      }
+    }
+  },
+  "dataset_stats": {
+    "total_pdfs": 586,
+    "pdf_years_breakdown": {
+      "2007": 1,
+      "2009": 2,
+      "2010": 1,
+      "2011": 1,
+      "2012": 28,
+      "2013": 24,
+      "2014": 14,
+      "2015": 18,
+      "2016": 35,
+      "2017": 21,
+      "2018": 26,
+      "2019": 33,
+      "2020": 36,
+      "2021": 31,
+      "2022": 33,
+      "2023": 42,
+      "2024": 109,
+      "2025": 79,
+      "2026": 52
+    },
+    "total_pdf_size_mb": 2689.87,
+    "total_json_tables": 30273,
+    "total_json_tables_size_mb": 1567.59,
+    "total_json_documents": 578,
+    "total_json_documents_size_mb": 1400.2
+  },
+  "api_routes": [
+    {
+      "path": "/openapi.json",
+      "name": "openapi",
+      "methods": [
+        "GET",
+        "HEAD"
+      ]
+    },
+    {
+      "path": "/docs",
+      "name": "swagger_ui_html",
+      "methods": [
+        "GET",
+        "HEAD"
+      ]
+    },
+    {
+      "path": "/docs/oauth2-redirect",
+      "name": "swagger_ui_redirect",
+      "methods": [
+        "GET",
+        "HEAD"
+      ]
+    },
+    {
+      "path": "/redoc",
+      "name": "redoc_html",
+      "methods": [
+        "GET",
+        "HEAD"
+      ]
+    },
+    {
+      "path": "/auth/callback",
+      "name": "top_level_auth_callback",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/api/chat",
+      "name": "api_chat",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "path": "/api/session/{session_id}",
+      "name": "api_clear_session",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "path": "/api/health",
+      "name": "api_health",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/assets",
+      "name": "assets",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "path": "/{full_path:path}",
+      "name": "serve_spa",
+      "methods": [
+        "GET"
+      ]
+    }
+  ]
+}

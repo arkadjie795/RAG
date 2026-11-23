@@ -30,6 +30,10 @@ database/
 !data_publikasi/.gitkeep
 !database/.gitkeep
 
+# Large Archive Exports & Audit Packages
+RAG_BPS_DEMAK_AUDIT_EXPORT*
+*.zip
+
 # Word & Office temporary lock files
 ~$*.docx
 ~$*.doc

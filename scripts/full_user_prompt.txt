@@ -1,0 +1,654 @@
+<USER_REQUEST>
+# FINAL INDEPENDENT TECHNICAL AUDIT — RAG BPS KABUPATEN DEMAK
+## Forensic Verification, Project Completion, Internship Readiness & Final Go/No-Go Decision
+
+Saya ingin kamu melakukan AUDIT FINAL secara menyeluruh terhadap proyek RAG BPS Kabupaten Demak.
+
+Ini bukan permintaan untuk membuat ringkasan proyek, bukan sekadar mengecek apakah aplikasi bisa berjalan, dan bukan permintaan untuk memperbaiki kode.
+
+Tujuan utama audit ini adalah menentukan secara objektif:
+
+1. Apakah proyek RAG ini benar-benar dibangun dan diimplementasikan dari awal?
+2. Apakah seluruh komponen sistem sudah berfungsi sesuai tujuan?
+3. Apakah pipeline publikasi BPS sampai menjadi jawaban chatbot benar-benar berjalan?
+4. Apakah chatbot menjawab berdasarkan data publikasi resmi, bukan mengarang?
+5. Apakah database PostgreSQL dan pgvector digunakan secara nyata oleh aplikasi?
+6. Apakah implementasi sudah cukup matang untuk didemonstrasikan?
+7. Apakah proyek layak dijadikan proyek utama dalam laporan magang Agustus–Desember 2026?
+8. Apa saja yang belum selesai, belum terbukti, atau masih perlu diperbaiki?
+9. Apa pekerjaan yang benar-benar wajib dilakukan sebelum proyek dinyatakan selesai?
+
+Saya membutuhkan penilaian independen. Jangan berusaha menyenangkan saya dengan menyatakan proyek sudah selesai jika bukti belum mendukungnya.
+
+---
+
+# A. ATURAN AUDIT
+
+1. Lakukan pemeriksaan terhadap source code asli dan hasil export.
+2. Jangan mengubah, menghapus, memindahkan, atau memperbaiki source code.
+3. Jangan melakukan refactoring.
+4. Jangan mengubah database aktif.
+5. Jangan menghentikan service yang sedang berjalan.
+6. Jangan menjalankan operasi destructive.
+7. Jangan melakukan migrasi database.
+8. Jangan menjalankan ingestion ulang terhadap seluruh publikasi.
+9. Jangan mengirim dokumen internal ke layanan eksternal.
+10. Jangan membaca atau menampilkan secret, API key, password, maupun token.
+11. Jangan menganggap dokumentasi sebagai bukti bahwa fitur benar-benar diimplementasikan.
+12. Jangan menganggap file test sebagai bukti bahwa test berhasil.
+13. Jangan menganggap aplikasi berhasil dijalankan sebagai bukti seluruh fitur berfungsi.
+14. Jangan membuat angka, hasil test, atau screenshot palsu.
+15. Jika bukti tidak ditemukan, tandai sebagai NOT VERIFIED.
+16. Jika suatu fitur hanya sebagian bekerja, tandai PARTIALLY VERIFIED.
+17. Jika implementasi terbukti tidak bekerja, tandai FAILED.
+18. Bedakan hasil pemeriksaan source code, hasil pengujian, dokumentasi, dan klaim sebelumnya.
+
+Jika suatu pemeriksaan membutuhkan perubahan environment atau risiko mengganggu service, jangan jalankan. Jelaskan keterbatasannya.
+
+---
+
+# B. AUDIT 1 — PROJECT STRUCTURE & SOURCE CODE COMPLETENESS
+
+Periksa keseluruhan struktur proyek.
+
+Identifikasi:
+
+- Backend.
+- Frontend.
+- API.
+- Chatbot.
+- RAG engine.
+- Ingestion.
+- PDF extraction.
+- Table extraction.
+- Data cleaning.
+- Row-to-Speech atau semantic table representation jika benar-benar ada.
+- Embedding.
+- Vector database.
+- Full-text search.
+- Hybrid retrieval.
+- RRF.
+- Reranking jika ada.
+- Gemini integration.
+- Prompt templates.
+- Citation/source handling.
+- Authentication.
+- Admin dashboard.
+- Document management.
+- Monitoring.
+- Logging.
+- Tests.
+- Configuration.
+- Deployment.
+
+Untuk setiap komponen, catat:
+
+- File lokasi.
+- Fungsi sebenarnya.
+- Modul yang memanggilnya.
+- Modul yang digunakan.
+- Bukti implementasi.
+- Status.
+- Kekurangan.
+
+Periksa apakah file yang diperlukan sudah disertakan dalam audit export.
+
+Buat matriks perbandingan:
+
+`Original Project → Export Package → Audit Evidence`
+
+Temukan file penting yang hilang dari paket export.
+
+Khususnya periksa apakah 13 file backend, 22 file frontend, dan 33 file RAG engine memang sudah mencakup keseluruhan implementasi yang diperlukan.
+
+Jangan menyatakan lengkap hanya karena file ZIP berhasil dibuka.
+
+---
+
+# C. AUDIT 2 — POSTGRESQL & PGVECTOR
+
+Periksa implementasi database secara mendalam.
+
+Verifikasi:
+
+- PostgreSQL version.
+- pgvector version.
+- Database schema.
+- Table relationships.
+- Primary keys.
+- Foreign keys.
+- Indexes.
+- Vector dimensions.
+- HNSW.
+- Full-text search.
+- JSONB usage.
+- Metadata.
+- Document-to-chunk relationships.
+- Chunk-to-embedding relationships.
+- Publication identifiers.
+- Data consistency.
+- Duplicate records.
+- Orphan records.
+- Null and invalid records.
+
+Identifikasi tabel utama dan fungsinya.
+
+Periksa secara khusus:
+
+- `publications`
+- `statistical_tables`
+- `vector_chunks`
+
+Jika nama tabel berbeda, dokumentasikan nama sebenarnya.
+
+Verifikasi apakah embedding benar-benar disimpan dalam PostgreSQL atau terdapat proses lain yang masih menggunakan ChromaDB atau SQLite.
+
+Periksa referensi database di seluruh source code dan konfigurasi yang aman.
+
+## Investigasi ChromaDB
+
+Audit klaim berikut:
+
+`database/chroma_store/` sebesar 4.17 GB merupakan legacy storage yang sudah digantikan PostgreSQL HNSW.
+
+Jangan menerima klaim tersebut tanpa bukti.
+
+Periksa:
+
+- Apakah aplikasi masih mengimpor ChromaDB?
+- Apakah terdapat konfigurasi ChromaDB aktif?
+- Apakah ada endpoint yang menggunakan ChromaDB?
+- Apakah ada proses ingestion yang menulis ke ChromaDB?
+- Apakah ChromaDB masih menjadi fallback?
+- Apakah PostgreSQL benar-benar menjadi vector store utama?
+
+Berikan kesimpulan apakah folder tersebut aman dikecualikan dari audit atau masih memiliki fungsi aktif.
+
+## Investigasi bps_documents.json
+
+Audit file sebesar 1.41 GB.
+
+Verifikasi apakah file tersebut:
+- Benar-benar redundan.
+- Masih digunakan aplikasi.
+- Menjadi sumber ingestion.
+- Menjadi fallback.
+- Berisi dokumen yang belum masuk PostgreSQL.
+- Memiliki data yang tidak terdapat di database.
+
+Jangan menyatakan redundan hanya berdasarkan ukuran atau nama file.
+
+---
+
+# D. AUDIT 3 — DATASET DAN PUBLIKASI BPS
+
+Lakukan penelusuran menyeluruh terhadap sumber data.
+
+Fokus pada publikasi resmi BPS yang relevan dengan Kabupaten Demak.
+
+Periksa alur:
+
+PDF asli → Extraction → Cleaning → Parsing → Structured Data → Chunking → Embedding → PostgreSQL.
+
+Buat matriks tahapan dengan bukti source code dan bukti data.
+
+Periksa:
+
+1. Apakah teks PDF berhasil diekstrak?
+2. Bagaimana tabel statistik dibaca?
+3. Bagaimana angka, satuan, tahun, dan wilayah dipertahankan?
+4. Apakah tabel multi-halaman ditangani?
+5. Apakah struktur header tabel dipertahankan?
+6. Apakah metadata publikasi tercatat?
+7. Apakah halaman sumber dapat dilacak?
+8. Apakah ada dokumen gagal diproses?
+9. Bagaimana duplikasi ditangani?
+10. Apakah proses ingestion idempotent?
+11. Apakah data lama bisa menyebabkan duplikasi ketika ingestion diulang?
+12. Apakah chunk dapat dikaitkan dengan publikasi aslinya?
+
+## Rekonsiliasi katalog PDF
+
+Klaim sebelumnya menyebut 586 PDF tahun 2007–2026.
+
+Buat perbandingan:
+
+- Jumlah PDF ditemukan.
+- Jumlah PDF valid.
+- Jumlah PDF berhasil diekstrak.
+- Jumlah PDF berhasil diproses.
+- Jumlah PDF berhasil masuk database.
+- Jumlah PDF gagal.
+- Jumlah PDF yang sengaja dikecualikan.
+
+Berikan breakdown per tahun jika datanya tersedia.
+
+Jangan menyamakan jumlah PDF dalam katalog dengan jumlah PDF yang berhasil diindeks.
+
+---
+
+# E. AUDIT 4 — EMBEDDING & RETRIEVAL
+
+Periksa model embedding sebenarnya.
+
+Audit klaim penggunaan:
+
+`paraphrase-multilingual-MiniLM-L12-v2`
+
+Verifikasi melalui source code dan konfigurasi.
+
+Periksa:
+
+- Model identifier.
+- Output dimension.
+- Normalization.
+- Token limits.
+- Text preprocessing.
+- Chunking strategy.
+- Embedding generation.
+- Embedding persistence.
+- Query embedding.
+- Similarity calculation.
+- Distance metric.
+- HNSW configuration.
+- Full-text search.
+- Hybrid retrieval.
+- Reciprocal Rank Fusion.
+- Top-K.
+- Filtering.
+- Duplicate retrieval.
+- Retrieval fallback.
+
+Jelaskan secara konkret apa yang terjadi ketika pengguna mengetik pertanyaan.
+
+Buat trace:
+
+`User Query → Query Processing → Embedding → Dense Retrieval → Lexical Retrieval → Fusion → Context Selection → Gemini`
+
+Sesuaikan dengan implementasi sebenarnya. Jangan memaksakan komponen yang ternyata tidak ada.
+
+Periksa apakah retrieval benar-benar mengambil data yang relevan atau hanya mengambil chunk berdasarkan kemiripan yang tidak cukup.
+
+---
+
+# F. AUDIT 5 — GEMINI & ANTI-HALLUCINATION
+
+Ini merupakan bagian paling penting dari proyek.
+
+Tujuan produk adalah chatbot pelayanan data BPS yang menjawab berdasarkan publikasi resmi, tidak mengarang, tidak membuat angka, dan tidak memberikan jawaban tanpa dasar.
+
+Periksa:
+
+- Gemini model yang benar-benar digunakan.
+- API integration.
+- System prompt.
+- Context construction.
+- Retrieved context.
+- Source attribution.
+- Citation generation.
+- Citation validation.
+- Refusal behavior.
+- Empty retrieval handling.
+- Low-confidence handling.
+- Prompt injection handling.
+- Context limit handling.
+- Hallucination mitigation.
+
+Jangan hanya membaca prompt dan menyimpulkan bahwa chatbot anti-hallucination.
+
+Lakukan pengujian terkontrol jika environment memungkinkan dan tidak mengganggu sistem.
+
+Buat test cases berikut:
+
+1. Pertanyaan yang jawabannya tersedia secara langsung.
+2. Pertanyaan yang membutuhkan perhitungan dari tabel.
+3. Pertanyaan yang membutuhkan perbandingan antar tahun.
+4. Pertanyaan dengan satuan yang berbeda.
+5. Pertanyaan yang ambigu.
+6. Pertanyaan yang tidak terdapat dalam publikasi.
+7. Pertanyaan yang meminta angka yang tidak tersedia.
+8. Pertanyaan yang mengandung asumsi salah.
+9. Pertanyaan yang mencampurkan dua wilayah.
+10. Pertanyaan yang mencoba memaksa Gemini mengarang.
+11. Pertanyaan yang meminta sumber atau halaman publikasi.
+12. Pertanyaan yang membutuhkan beberapa dokumen.
+
+Untuk setiap pengujian catat:
+
+- Pertanyaan.
+- Expected answer atau kriteria jawaban.
+- Retrieved documents.
+- Retrieved chunks.
+- Jawaban Gemini.
+- Source citation.
+- Apakah jawabannya didukung sumber.
+- Apakah ada angka yang tidak didukung.
+- Apakah seharusnya menolak menjawab.
+- Hasil PASS / FAIL / NOT RUN.
+
+Jangan mengarang ground truth. Jika belum ada data referensi untuk menguji jawaban, tandai NEEDS GROUND TRUTH.
+
+Bedakan:
+- Retrieval correctness.
+- Context correctness.
+- Numerical correctness.
+- Citation correctness.
+- Final answer correctness.
+
+Jangan mengklaim 100% accuracy tanpa dataset evaluasi dan metode yang dapat diulang.
+
+---
+
+# G. AUDIT 6 — CHATBOT END-TO-END
+
+Periksa integrasi frontend, backend, database, dan Gemini.
+
+Telusuri:
+
+- User input.
+- API request.
+- Backend processing.
+- Retrieval.
+- Gemini request.
+- Response processing.
+- Citation rendering.
+- Error handling.
+- Conversation history.
+- Session management.
+- Loading state.
+- Timeout.
+- Retry.
+- Rate limiting jika ada.
+
+Periksa apakah chatbot benar-benar menggunakan pipeline RAG yang sama dengan dokumentasi.
+
+Periksa apakah frontend menampilkan sumber yang benar-benar digunakan oleh backend, bukan sekadar link yang dibuat atau ditebak.
+
+Jika aplikasi aktif dan dapat diuji secara aman, lakukan pengujian end-to-end tanpa mengubah data.
+
+---
+
+# H. AUDIT 7 — FITUR APLIKASI
+
+Inventarisasi seluruh fitur yang pernah diklaim, termasuk klaim 42 fitur jika masih berlaku.
+
+Buat feature verification matrix:
+
+| Feature | Source File | API/Route | UI | Backend Logic | Test Evidence | Status |
+
+Periksa fitur seperti:
+
+- Chatbot.
+- Admin dashboard.
+- Document management.
+- Upload.
+- Ingestion.
+- Data Explorer.
+- Vector observability.
+- Publication search.
+- Citation.
+- Analytics.
+- User management.
+- Authentication.
+- Monitoring.
+
+Jangan menganggap halaman UI sebagai bukti fitur backend berfungsi.
+
+Pisahkan:
+- Implemented.
+- Functional.
+- Partially functional.
+- UI only.
+- Planned.
+- Broken.
+- Not verified.
+
+---
+
+# I. AUDIT 8 — SECURITY & RELIABILITY
+
+Periksa:
+
+- Authentication.
+- Authorization.
+- API access control.
+- CORS.
+- Input validation.
+- File upload validation.
+- File size limits.
+- SQL injection exposure.
+- Prompt injection exposure.
+- Secret management.
+- Error leakage.
+- Logging.
+- Rate limiting.
+- Database connection management.
+- Backup and recovery.
+- Dependency vulnerabilities jika dapat diperiksa tanpa instalasi atau koneksi eksternal.
+
+Audit secara khusus klaim sebelumnya mengenai wildcard CORS dan endpoint ingestion tanpa token.
+
+Jangan menyimpulkan aman hanya karena aplikasi digunakan di intranet.
+
+Bedakan:
+- Local development readiness.
+- Intranet demonstration readiness.
+- Internal deployment readiness.
+- Production readiness.
+
+Jangan menyatakan production-ready tanpa kriteria dan bukti.
+
+---
+
+# J. AUDIT 9 — PERFORMANCE
+
+Periksa klaim latency sebelumnya.
+
+Jika data historis tersedia, evaluasi:
+
+- Embedding latency.
+- Retrieval latency.
+- Gemini response latency.
+- Total end-to-end latency.
+- Database query performance.
+- Ingestion performance.
+
+Jika melakukan benchmark baru, gunakan metode aman dan dokumentasikan:
+
+- Jumlah sampel.
+- Hardware.
+- Kondisi database.
+- Cold/warm state.
+- Median.
+- P95 jika sampelnya memadai.
+- Timeout.
+- Error rate.
+
+Jangan menggunakan satu kali pengukuran sebagai benchmark representatif.
+
+---
+
+# K. AUDIT 10 — TESTING & QUALITY
+
+Periksa semua test yang tersedia.
+
+Rekonsiliasi klaim sebelumnya mengenai:
+- 24 test cases.
+- 23 passed.
+- 1 failed.
+- Accuracy 100%.
+- Score 87.7%.
+- Production readiness 74.5%.
+- Intranet readiness 100%.
+- Klaim 42 fitur.
+
+Cari output test asli, bukan hanya dokumentasi.
+
+Jika hasil berbeda antar dokumen, buat rekonsiliasi dan tunjukkan bukti yang lebih kuat.
+
+Buat test coverage matrix berdasarkan komponen.
+
+Jangan menjalankan test berisiko terhadap database aktif.
+
+---
+
+# L. AUDIT 11 — INTERNSHIP PROJECT READINESS
+
+Konteks pelaksanaan:
+
+- Instansi: BPS Kabupaten Demak.
+- Periode: Agustus–Desember 2026.
+- Peran: Membangun sistem dari awal.
+- Sumber data: Publikasi resmi BPS, khususnya Kabupaten Demak.
+- Database: PostgreSQL dan pgvector.
+- AI: Google Gemini.
+- Produk: Chatbot pelayanan data statistik berbasis RAG.
+- Target: Menjawab berdasarkan publikasi dan data nyata, tidak mengarang.
+- Laporan: Mengikuti format resmi kampus yang sudah tersedia.
+
+Nilai apakah sistem ini layak dijadikan proyek utama dalam laporan magang.
+
+Periksa apakah bukti yang tersedia cukup untuk menjelaskan:
+
+1. Latar belakang masalah.
+2. Tujuan pengembangan.
+3. Analisis kebutuhan.
+4. Perancangan sistem.
+5. Arsitektur.
+6. Implementasi.
+7. Pengolahan data.
+8. Integrasi AI.
+9. Pengujian.
+10. Hasil dan evaluasi.
+11. Keterbatasan.
+12. Kesimpulan.
+
+Bedakan pekerjaan yang terbukti dilakukan dari hal yang hanya direncanakan.
+
+Jangan mengarang kontribusi mahasiswa atau mengklaim fitur yang tidak dibuat.
+
+Buat daftar bukti yang masih perlu disiapkan untuk laporan kampus, termasuk screenshot, diagram, contoh pengujian, dan dokumentasi.
+
+---
+
+# M. AUDIT 12 — PROJECT COMPLETION CRITERIA
+
+Buat checklist yang dapat digunakan untuk menentukan apakah proyek sudah selesai.
+
+Gunakan empat kategori:
+
+**P0 — Critical**
+Tanpa ini proyek belum layak dinyatakan selesai atau belum aman didemonstrasikan.
+
+**P1 — Important**
+Sangat disarankan diselesaikan sebelum penyerahan proyek.
+
+**P2 — Improvement**
+Peningkatan kualitas yang tidak harus menghambat penyelesaian proyek.
+
+**P3 — Future Development**
+Fitur lanjutan setelah proyek utama selesai.
+
+Setiap temuan wajib memiliki:
+
+- ID.
+- Judul.
+- Severity.
+- Bukti.
+- Lokasi file.
+- Dampak.
+- Rekomendasi.
+- Kriteria penerimaan.
+- Estimasi kompleksitas.
+
+Jangan menjadikan semua rekomendasi sebagai kewajiban. Prioritaskan yang benar-benar memengaruhi tujuan utama proyek.
+
+---
+
+# N. FORMAT OUTPUT WAJIB
+
+Buat direktori baru:
+
+`docs/final_independent_audit/`
+
+Buat dokumen:
+
+1. `00_EXECUTIVE_FINAL_VERDICT.md`
+2. `01_PROJECT_STRUCTURE_AND_COMPLETENESS.md`
+3. `02_DATABASE_FORENSIC_AUDIT.md`
+4. `03_DATASET_AND_INGESTION_AUDIT.md`
+5. `04_EMBEDDING_AND_RETRIEVAL_AUDIT.md`
+6. `05_GEMINI_AND_HALLUCINATION_AUDIT.md`
+7. `06_END_TO_END_AND_FEATURE_AUDIT.md`
+8. `07_SECURITY_AND_RELIABILITY_AUDIT.md`
+9. `08_PERFORMANCE_AND_TEST_AUDIT.md`
+10. `09_INTERNSHIP_REPORT_READINESS.md`
+11. `10_REMAINING_WORK_AND_PRIORITY.md`
+12. `11_EVIDENCE_INDEX.md`
+13. `12_CLAIM_RECONCILIATION.md`
+
+Jangan membuat dokumen panjang yang hanya mengulang klaim. Setiap kesimpulan harus memiliki bukti.
+
+---
+
+# O. FINAL VERDICT — WAJIB MENJAWAB
+
+Pada dokumen pertama, jawab pertanyaan berikut secara tegas:
+
+1. Apakah sistem benar-benar sudah terimplementasi?
+2. Apakah pipeline PDF hingga jawaban Gemini berfungsi?
+3. Apakah PostgreSQL benar-benar menjadi database utama?
+4. Apakah data publikasi cukup lengkap untuk cakupan yang diklaim?
+5. Apakah chatbot terbukti menjawab berdasarkan sumber?
+6. Apakah mekanisme pencegahan halusinasi cukup?
+7. Apakah fitur utama sudah berfungsi?
+8. Apakah sistem layak untuk demonstrasi magang?
+9. Apakah proyek layak dimasukkan sebagai proyek utama laporan magang?
+10. Apakah sistem sudah dapat dinyatakan selesai?
+
+Pilih status akhir:
+
+- **GO — PROJECT READY:** tujuan utama tercapai, bukti memadai, tidak ada blocker kritis.
+- **CONDITIONAL GO — READY WITH LIMITATIONS:** layak didemonstrasikan dan dilaporkan dengan keterbatasan yang dinyatakan secara jelas.
+- **NOT READY — CRITICAL WORK REMAINS:** masih terdapat kekurangan yang menghalangi tujuan utama.
+
+Berikan alasan berdasarkan bukti.
+
+Jangan memberikan nilai 100% hanya karena seluruh checklist internal selesai.
+
+Jangan memberikan skor keseluruhan tanpa menjelaskan metodologi dan bobotnya.
+
+---
+
+# P. TAHAP TERAKHIR — JANGAN IMPLEMENTASI PERBAIKAN
+
+Saya hanya meminta audit dan rekomendasi.
+
+JANGAN memperbaiki kode sekarang.
+
+JANGAN mengubah database.
+
+JANGAN melakukan refactoring.
+
+JANGAN menambahkan fitur baru.
+
+JANGAN mengubah prompt produksi.
+
+JANGAN menghapus data.
+
+Selesaikan audit, buat semua dokumen, lalu berikan ringkasan akhir di terminal:
+
+1. Status proyek.
+2. Hal yang sudah terbukti berfungsi.
+3. Hal yang belum terbukti.
+4. Critical blockers.
+5. Pekerjaan yang wajib diselesaikan.
+6. Pekerjaan yang hanya berupa improvement.
+7. Kelayakan untuk laporan magang.
+8. Apakah proyek bisa dinyatakan selesai atau belum.
+
+Saya ingin hasil audit yang jujur, independen, berbasis bukti, dan dapat dipertanggungjawabkan secara teknis maupun akademis.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-16T10:38:57+07:00.
+</ADDITIONAL_METADATA>

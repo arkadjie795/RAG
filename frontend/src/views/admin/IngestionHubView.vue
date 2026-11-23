@@ -179,11 +179,11 @@
             <Calendar class="w-5 h-5" />
           </div>
           <div class="flex items-center space-x-2">
-            <h3 class="text-sm font-black text-slate-900">1. Mode Inkremental</h3>
+            <h3 class="text-sm font-black text-slate-900">1. Sinkronisasi Publikasi Baru (Batch 20)</h3>
             <span class="text-[9px] font-bold bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded">Web API BPS</span>
           </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Sinkronisasi batch 20 publikasi resmi terbaru via Web API BPS. Mengekstrak 100% seluruh halaman PDF, memisahkan tabel statistik & teks narasi ke JSON terpisah, lalu mengindeks pgvector.
+            Sinkronisasi 20 publikasi resmi terbaru via Web API BPS. Seluruh halaman dokumen PDF (100% full-book) diekstrak penuh, memisahkan tabel statistik & teks narasi ke JSON terpisah, lalu di-embed ke PostgreSQL pgvector.
           </p>
         </div>
 
@@ -194,7 +194,7 @@
           class="w-full py-2.5 px-4 bg-sky-700 hover:bg-sky-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 shadow-xs cursor-pointer disabled:opacity-40"
         >
           <Play class="w-3.5 h-3.5" />
-          <span>Jalankan Mode Inkremental</span>
+          <span>Jalankan Batch 20 Dokumen</span>
         </button>
       </div>
 
@@ -205,11 +205,11 @@
             <Archive class="w-5 h-5" />
           </div>
           <div class="flex items-center space-x-2">
-            <h3 class="text-sm font-black text-slate-900">2. Mode Deep Ingest</h3>
+            <h3 class="text-sm font-black text-slate-900">2. Deep Historical Ingest (Batch 100)</h3>
             <span class="text-[9px] font-bold bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded">Web API BPS</span>
           </div>
           <p class="text-xs text-slate-500 leading-relaxed">
-            Menelusuri riwayat katalog lengkap Web API BPS Demak (hingga 100 dokumen). Membaca 100% halaman dari cover sampai selesai tanpa pemotongan.
+            Menelusuri arsip publikasi lengkap Web API BPS Demak (hingga 100 dokumen). Mengekstrak 100% seluruh halaman dari cover sampai lampiran tanpa pemotongan.
           </p>
         </div>
 
@@ -220,7 +220,7 @@
           class="w-full py-2.5 px-4 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 shadow-xs cursor-pointer disabled:opacity-40"
         >
           <Play class="w-3.5 h-3.5" />
-          <span>Jalankan Deep Ingest</span>
+          <span>Jalankan Batch 100 Dokumen</span>
         </button>
       </div>
 

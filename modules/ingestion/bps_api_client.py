@@ -113,11 +113,21 @@ class BPSWebApiClient:
             logger.error(f"[BPSWebApiClient] Error fetching publication page {page}: {e}")
             return {"items": [], "total": 0, "page": page, "pages": 0}
 
-    def fetch_all_publications(self, max_pages: int = 5, year: Optional[str] = None) -> List[Dict[str, Any]]:
+    def fetch_all_publications(
+        self,
+        max_pages: int = 5,
+        year: Optional[str] = None,
+        progress_callback: Optional[Any] = None
+    ) -> List[Dict[str, Any]]:
         """Iterates through publication pages up to max_pages."""
         all_items = []
         for p in range(1, max_pages + 1):
             logger.info(f"[BPSWebApiClient] Fetching official publications page {p}/{max_pages}...")
+            if progress_callback:
+                try:
+                    progress_callback(log_msg=f"[Web API] Menghubungi server BPS: membaca katalog halaman {p}/{max_pages}...")
+                except Exception:
+                    pass
             res = self.fetch_publication_page(page=p, year=year)
             items = res.get("items", [])
             if not items:
@@ -209,12 +219,43 @@ class BPSWebApiClient:
             self.registry.mark_download_failed(pub_id)
             return None
 
-    def run_api_ingestion(self, max_pages: int = 2, year: Optional[str] = None) -> List[Path]:
+    def run_api_ingestion(
+        self,
+        max_pages: int = 2,
+        year: Optional[str] = None,
+        progress_callback: Optional[Any] = None
+    ) -> List[Path]:
         """Runs complete ingestion cycle: discovers from API, downloads new PDFs, returns list of Paths."""
-        publications = self.fetch_all_publications(max_pages=max_pages, year=year)
+        publications = self.fetch_all_publications(max_pages=max_pages, year=year, progress_callback=progress_callback)
         downloaded_paths = []
+        total_pubs = len(publications)
 
-        for pub in publications:
+        if progress_callback:
+            try:
+                progress_callback(
+                    phase=f"Web API BPS: Menemukan {total_pubs} publikasi",
+                    progress=35,
+                    processed=0,
+                    total=total_pubs,
+                    log_msg=f"[Web API] Menemukan {total_pubs} publikasi resmi di Domain 3321. Memeriksa file unduhan..."
+                )
+            except Exception:
+                pass
+
+        for idx, pub in enumerate(publications, 1):
+            title = pub.get("title", "")
+            if progress_callback:
+                try:
+                    progress_callback(
+                        phase=f"Mengunduh [{idx}/{total_pubs}]: {title[:30]}...",
+                        progress=35 + int((idx / max(1, total_pubs)) * 10),
+                        processed=idx,
+                        total=total_pubs,
+                        log_msg=f"[Unduh {idx}/{total_pubs}] Memeriksa/mengunduh: {title}"
+                    )
+                except Exception:
+                    pass
+
             path = self.download_publication_pdf(pub)
             if path:
                 downloaded_paths.append(path)

@@ -249,6 +249,97 @@ class BPSChatbot:
             "type": "rag_data"
         }
 
+    def stream_ask(
+        self,
+        question: str,
+        session_id: str = "default",
+        daerah: Optional[str] = None,
+        tahun: Optional[str] = None,
+        kategori: Optional[str] = None,
+        top_k: Optional[int] = None
+    ):
+        """
+        Processes a user question and yields streaming chunks:
+        1. Yields initial metadata (mode, citations).
+        2. Streams text tokens from LLM as they are generated.
+        3. Persists conversation into PostgreSQL and yields completion marker.
+        """
+        question = question.strip()
+        if not question:
+            yield {
+                "type": "done",
+                "answer": "Halo! Ada yang bisa saya bantu terkait data statistik Kabupaten Demak?",
+                "citations": [],
+                "session_id": session_id
+            }
+            return
+
+        session = self.session_manager.get_or_create(session_id)
+        chat_history_str = session.format_for_prompt()
+
+        if is_conversational_or_greeting(question):
+            prompt = CONVERSATIONAL_PROMPT_TEMPLATE.format(
+                chat_history=chat_history_str,
+                user_query=question
+            )
+            yield {"type": "metadata", "mode": "conversational", "citations": []}
+            full_answer_parts = []
+            for token in self.llm.stream_generate(prompt=prompt, system_prompt=BPS_SYSTEM_PROMPT):
+                full_answer_parts.append(token)
+                yield {"type": "token", "token": token}
+
+            full_answer = "".join(full_answer_parts).strip()
+            session.add_user_message(question)
+            session.add_assistant_message(full_answer)
+            yield {
+                "type": "done",
+                "answer": full_answer,
+                "citations": [],
+                "session_id": session_id
+            }
+            return
+
+        # RAG Data Mode
+        effective_query = self._resolve_followup_query(question, session.history)
+        rag_package = self.feeder.feed_context(
+            query=effective_query,
+            daerah=daerah,
+            tahun=tahun,
+            kategori=kategori,
+            top_k=top_k
+        )
+        context_str = rag_package["context_text"]
+        citations = rag_package["citations"]
+
+        yield {
+            "type": "metadata",
+            "mode": "rag_data",
+            "citations": citations,
+            "total_references": len(citations)
+        }
+
+        prompt = DATA_QUERY_PROMPT_TEMPLATE.format(
+            context=context_str,
+            chat_history=chat_history_str,
+            user_query=question
+        )
+
+        full_answer_parts = []
+        for token in self.llm.stream_generate(prompt=prompt, system_prompt=BPS_SYSTEM_PROMPT):
+            full_answer_parts.append(token)
+            yield {"type": "token", "token": token}
+
+        full_answer = "".join(full_answer_parts).strip()
+        session.add_user_message(question)
+        session.add_assistant_message(full_answer)
+
+        yield {
+            "type": "done",
+            "answer": full_answer,
+            "citations": citations,
+            "session_id": session_id
+        }
+
     def clear_memory(self, session_id: str = "default") -> None:
         """Resets the history of a specific session."""
         self.session_manager.clear_session(session_id)

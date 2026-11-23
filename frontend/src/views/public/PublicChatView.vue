@@ -182,7 +182,7 @@ import {
   Trash2,
   BookOpen
 } from 'lucide-vue-next'
-import { sendPublicChatMessage } from '../../lib/api'
+import { sendPublicChatMessage, streamPublicChatMessage } from '../../lib/api'
 
 const KECAMATAN_LIST = [
   'Bonang', 'Demak', 'Dempet', 'Gajah', 'Guntur', 'Karanganyar',
@@ -217,6 +217,14 @@ async function sendMessage() {
   inputQuery.value = ''
   isLoading.value = true
 
+  // Add placeholder assistant message for streaming typing effect
+  const assistantMsg = {
+    role: 'assistant',
+    content: '',
+    citations: []
+  }
+  messages.value.push(assistantMsg)
+
   try {
     const payload = {
       message: query,
@@ -225,20 +233,31 @@ async function sendMessage() {
       tahun: selectedTahun.value || null,
       top_k: 4
     }
-    const res = await sendPublicChatMessage(payload)
-    const assistantData = res.data || {}
 
-    messages.value.push({
-      role: 'assistant',
-      content: assistantData.answer || 'Tidak ada respons yang dapat ditampilkan.',
-      citations: assistantData.citations || []
-    })
+    try {
+      await streamPublicChatMessage(
+        payload,
+        (token) => {
+          assistantMsg.content += token
+        },
+        (meta) => {
+          if (meta.citations) {
+            assistantMsg.citations = meta.citations
+          }
+        }
+      )
+      if (!assistantMsg.content.trim()) {
+        assistantMsg.content = 'Tidak ada respons yang dapat ditampilkan.'
+      }
+    } catch (streamErr) {
+      console.warn('Streaming failed, fallback to standard POST:', streamErr)
+      const res = await sendPublicChatMessage(payload)
+      const assistantData = res.data || {}
+      assistantMsg.content = assistantData.answer || 'Tidak ada respons yang dapat ditampilkan.'
+      assistantMsg.citations = assistantData.citations || []
+    }
   } catch (error) {
-    messages.value.push({
-      role: 'assistant',
-      content: `Terjadi kendala saat menghubungi server data: ${error.message}. Silakan coba lagi.`,
-      citations: []
-    })
+    assistantMsg.content = `Terjadi kendala saat menghubungi server data: ${error.message}. Silakan coba lagi.`
   } finally {
     isLoading.value = false
   }

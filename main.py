@@ -298,37 +298,38 @@ class BPSPipelineOrchestrator:
         print("=" * 80 + "\n")
 
         # 1. Scrape & Ingest new publications (Prefer Official BPS Web API)
-        logger.info(f"[MODE: STATIS] Fetching catalog up to {max_pages} pages via Official BPS Web API...")
+        batch_count = (max_pages or 2) * 10
+        logger.info(f"[MODE: STATIS] Fetching catalog batch of {batch_count} publications via Official BPS Web API...")
         if progress_callback:
             try:
                 progress_callback(
-                    phase=f"Menghubungi Web API BPS (batch {max_pages} halaman katalog)...",
+                    phase=f"Menghubungi Web API BPS (batch {batch_count} publikasi)...",
                     progress=30,
-                    log_msg=f"Menghubungi Web API BPS Demak (Domain 3321, batch {max_pages} halaman katalog = {max_pages * 10} publikasi)..."
+                    log_msg=f"Menghubungi Web API BPS Demak (Domain 3321, batch {batch_count} publikasi)..."
                 )
             except Exception:
                 pass
 
         try:
-            newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages)
+            newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages, progress_callback=progress_callback)
             logger.info(f"[MODE: STATIS] Web API downloaded {len(newly_downloaded)} new publications.")
             if progress_callback:
                 try:
                     progress_callback(
                         phase=f"Web API BPS: {len(newly_downloaded)} publikasi baru diunduh",
-                        progress=40,
+                        progress=45,
                         log_msg=f"Web API BPS mengunduh {len(newly_downloaded)} publikasi PDF baru ke penyimpanan lokal."
                     )
                 except Exception:
                     pass
         except Exception as e:
-            logger.warning(f"[MODE: STATIS] Web API attempt encountered issue ({e}). Trying fallback scraper...")
+            logger.warning(f"[MODE: STATIS] Web API sync notice: {e}. Melanjutkan dengan arsip lokal.")
             if progress_callback:
                 try:
-                    progress_callback(log_msg=f"[Fallback] Mencoba crawler web lokal karena API: {e}")
+                    progress_callback(log_msg=f"[Web API] Info koneksi ({e}). Melanjutkan proses registri & PDF lokal.")
                 except Exception:
                     pass
-            newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
+            newly_downloaded = []
 
         # 2. Extract & Index pending publications
         pending_items = self.registry.get_pending_extractions()
@@ -375,6 +376,9 @@ class BPSPipelineOrchestrator:
                 if res.get("status") == "SUCCESS":
                     success_count += 1
                     total_indexed_chunks += res.get("total_chunks", 0)
+            except InterruptedError:
+                logger.info("[MODE: STATIS] Pipeline extraction stopped by user.")
+                raise
             except Exception as e:
                 logger.error(f"Error processing {file_path.name}: {e}")
 
@@ -409,20 +413,25 @@ class BPSPipelineOrchestrator:
                 pass
 
         try:
-            newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages)
+            newly_downloaded = self.api_client.run_api_ingestion(max_pages=max_pages, progress_callback=progress_callback)
             logger.info(f"[MODE: ALL] Web API downloaded {len(newly_downloaded)} new publications.")
             if progress_callback:
                 try:
                     progress_callback(
                         phase=f"Web API BPS: {len(newly_downloaded)} publikasi baru diunduh",
-                        progress=40,
+                        progress=45,
                         log_msg=f"Web API BPS selesai mengunduh {len(newly_downloaded)} file PDF baru."
                     )
                 except Exception:
                     pass
         except Exception as e:
-            logger.warning(f"[MODE: ALL] Web API attempt encountered issue ({e}). Trying fallback scraper...")
-            newly_downloaded = self.scraper.run_ingestion_pipeline(max_pages=max_pages)
+            logger.warning(f"[MODE: ALL] Web API sync notice: {e}. Melanjutkan dengan arsip lokal.")
+            if progress_callback:
+                try:
+                    progress_callback(log_msg=f"[Web API] Info koneksi ({e}). Melanjutkan proses registri & PDF lokal.")
+                except Exception:
+                    pass
+            newly_downloaded = []
         logger.info(f"[MODE: ALL] Historical crawl complete. Downloaded {len(newly_downloaded)} new publications.")
 
         pending_items = self.registry.get_pending_extractions()
@@ -469,6 +478,9 @@ class BPSPipelineOrchestrator:
                 if res.get("status") == "SUCCESS":
                     success_count += 1
                     total_indexed_chunks += res.get("total_chunks", 0)
+            except InterruptedError:
+                logger.info("[MODE: STATIS] Pipeline extraction stopped by user.")
+                raise
             except Exception as e:
                 logger.error(f"Error processing {file_path.name}: {e}")
 
@@ -522,21 +534,17 @@ class BPSPipelineOrchestrator:
         except Exception as e:
             logger.warning(f"[MODE: TEST] Web API fetch error: {e}")
 
-        # Fallback to web scraper if API didn't return a file
-        if not downloaded_pdf_path:
-            logger.info("[MODE: TEST] Trying fallback web scraper for page 1...")
-            pubs = self.scraper.fetch_publication_list(max_pages=1, keyword="Demak")
-            if pubs:
-                target_pub = pubs[0]
-                logger.info(f"[MODE: TEST] Found publication via scraper: [{target_pub['publication_id']}] {target_pub['title']}")
-                downloaded_pdf_path = self.scraper.download_pdf(target_pub)
-
         # Fallback to local files if live network blocked or already present
         if not downloaded_pdf_path:
             existing_pdfs = list(settings.DEMAK_DATA_DIR.rglob("*.pdf"))
             if existing_pdfs:
                 downloaded_pdf_path = existing_pdfs[0]
                 logger.info(f"[MODE: TEST] Using existing local PDF: {downloaded_pdf_path.name}")
+                if progress_callback:
+                    try:
+                        progress_callback(log_msg=f"[Uji] Menggunakan PDF lokal resmi yang tersedia: {downloaded_pdf_path.name}")
+                    except Exception:
+                        pass
                 target_pub = {
                     "publication_id": downloaded_pdf_path.stem.split("_")[0],
                     "title": downloaded_pdf_path.stem,

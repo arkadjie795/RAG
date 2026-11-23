@@ -51,51 +51,93 @@ class RAGFeeder:
         match = re.search(r"\b(201[0-9]|202[0-9])\b", query)
         return match.group(1) if match else None
 
-    def _load_granular_table_preview(self, json_path_str: str, max_rows: int = 20) -> Optional[str]:
+    def _load_granular_table_preview(
+        self,
+        json_path_str: Optional[str] = None,
+        doc_id: Optional[str] = None,
+        table_id: Optional[str] = None,
+        max_rows: int = 35
+    ) -> Optional[str]:
         """
-        Reads granular table JSON directly from disk and formats it into
-        a readable Markdown table for the LLM.
+        Reads granular table JSON directly from disk or PostgreSQL statistical_tables,
+        and formats it into a readable Markdown table for the LLM.
         """
-        if not json_path_str:
+        data = None
+
+        # 1. Try reading from disk file if exists
+        if json_path_str:
+            table_path = Path(json_path_str)
+            if not table_path.is_absolute():
+                table_path = settings.PROJECT_ROOT / table_path
+            if table_path.exists():
+                try:
+                    with open(table_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                except Exception as e:
+                    logger.warning(f"Failed to read disk table JSON at {table_path}: {e}")
+
+        # 2. Fallback to PostgreSQL statistical_tables (30,272 tables)
+        if not data and (table_id or doc_id or json_path_str):
+            try:
+                from config.database import get_db_cursor
+                candidates = []
+                if table_id:
+                    candidates.append(table_id)
+                if doc_id and table_id:
+                    candidates.append(f"{doc_id}_{table_id}")
+                if json_path_str:
+                    m = re.search(r"database[\\/]tables[\\/]([^\\/]+)[\\/](?:table_|tabel_)?([^\.]+)\.json", json_path_str)
+                    if m:
+                        candidates.append(f"{m.group(1)}_{m.group(2)}")
+                        candidates.append(f"{m.group(1)}_table_{m.group(2)}")
+
+                with get_db_cursor() as cur:
+                    for cid in candidates:
+                        cur.execute("""
+                            SELECT kolom, records, satuan, sumber, table_title
+                            FROM statistical_tables
+                            WHERE table_id = %s
+                            LIMIT 1;
+                        """, (cid,))
+                        row = cur.fetchone()
+                        if row:
+                            data = {
+                                "kolom": row[0],
+                                "records": row[1],
+                                "satuan": row[2] or "N/A",
+                                "sumber": row[3] or "BPS Kabupaten Demak",
+                                "table_title": row[4]
+                            }
+                            break
+            except Exception as ex:
+                logger.warning(f"[RAGFeeder] PostgreSQL table lookup error: {ex}")
+
+        if not data:
             return None
 
-        table_path = Path(json_path_str)
-        if not table_path.is_absolute():
-            table_path = settings.PROJECT_ROOT / table_path
+        columns = data.get("kolom", [])
+        records = data.get("records", [])
+        satuan = data.get("satuan", "N/A")
+        sumber = data.get("sumber", "BPS Kabupaten Demak")
 
-        if not table_path.exists():
+        if not columns or not records:
             return None
 
-        try:
-            with open(table_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
+        clean_cols = [c.replace("_", " ") for c in columns]
+        lines = [
+            f"Satuan: {satuan} | Sumber: {sumber}",
+            "| " + " | ".join(clean_cols) + " |",
+            "| " + " | ".join(["---"] * len(clean_cols)) + " |"
+        ]
 
-            columns = data.get("kolom", [])
-            records = data.get("records", [])
-            satuan = data.get("satuan", "N/A")
-            sumber = data.get("sumber", "BPS")
+        for row in records[:max_rows]:
+            row_vals = [str(row.get(col, "")).replace("\n", " ").strip() for col in columns]
+            lines.append("| " + " | ".join(row_vals) + " |")
 
-            if not columns or not records:
-                return None
+        if len(records) > max_rows:
+            lines.append(f"... (dan {len(records) - max_rows} baris lainnya)")
 
-            clean_cols = [c.replace("_", " ") for c in columns]
-            lines = [
-                f"Satuan: {satuan} | Sumber: {sumber}",
-                "| " + " | ".join(clean_cols) + " |",
-                "| " + " | ".join(["---"] * len(clean_cols)) + " |"
-            ]
-
-            for row in records[:max_rows]:
-                row_vals = [str(row.get(col, "")).replace("\n", " ").strip() for col in columns]
-                lines.append("| " + " | ".join(row_vals) + " |")
-
-            if len(records) > max_rows:
-                lines.append(f"... (dan {len(records) - max_rows} baris lainnya)")
-
-            return "\n".join(lines)
-        except Exception as e:
-            logger.warning(f"Failed to read table JSON at {table_path}: {e}")
-            return None
+        return "\n".join(lines)
 
     def feed_context(
         self,
@@ -192,9 +234,11 @@ class RAGFeeder:
             table_json_path = meta.get("file_json_tabel")
             
             full_content = None
-            if bot_config.INCLUDE_FULL_TABLE_JSON and "tabel" in tipe_konten and table_json_path:
+            if bot_config.INCLUDE_FULL_TABLE_JSON and "tabel" in tipe_konten:
                 full_content = self._load_granular_table_preview(
-                    table_json_path,
+                    json_path_str=table_json_path,
+                    doc_id=meta.get("dokumen_id") or res.get("doc_id"),
+                    table_id=meta.get("tabel_id") or res.get("table_id"),
                     max_rows=bot_config.MAX_TABLE_ROWS_IN_CONTEXT
                 )
 
