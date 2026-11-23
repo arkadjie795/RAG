@@ -4,6 +4,7 @@ Serves interactive data grid, search/filter per kecamatan, and Proof of Data dra
 """
 import os
 import hashlib
+import re
 from typing import Dict, Any, Optional, List
 import json
 from fastapi import APIRouter, HTTPException, Query
@@ -41,6 +42,44 @@ def detect_daerah_from_title(title: str) -> str:
     if "kecamatan demak" in t_lower:
         return "Kecamatan Demak"
     return "Kabupaten Demak"
+
+def is_valid_statistical_table(title: str, row_count: int = 1, col_count: int = 1) -> bool:
+    """
+    Validates whether a table record is a real statistical table or a false-positive narrative fragment.
+    Filters out prose sentences, headings, and tables of contents accidentally parsed by OCR.
+    """
+    if not title or len(title.strip()) < 4:
+        return False
+    s = title.strip()
+    # Reject sentence fragments starting with lowercase
+    if s[0].islower():
+        return False
+    # Reject sentence fragments ending with trailing hyphen, slash, or conjunction
+    if re.search(r'[\-\,\/]$', s):
+        return False
+    if re.search(r'(yaitu|sebagai|adalah|bahwa|sehingga|namun|dengan|untuk|yang)\s*$', s, re.IGNORECASE):
+        return False
+    # Reject non-table headings and metadata
+    reject_patterns = [
+        r'^(assalamu|bupati|halaman|daftar|bab\s+[ivxlcdm]+|kata\s+pengantar|puji\s+syukur|issn|undang-undang|gambar\s+\d+)',
+        r'^\d+\.\d+\.?\s*(latar|maksud|tujuan|metodologi|ruang\s+lingkup|sistematika|kesimpulan|saran)',
+        r'\.{4,}',
+        r'badan pusat statistik'
+    ]
+    for p in reject_patterns:
+        if re.search(p, s, re.IGNORECASE):
+            return False
+
+    # Positive match 1: Standard official BPS table numbering (Tabel 1, Table 2.1, 3.15.)
+    if re.search(r'^(tabel|table|\d+\.[\d\.]*)\s+', s, re.IGNORECASE):
+        return True
+
+    # Positive match 2: Clean statistical titles without sentence punctuation in middle
+    if not re.search(r'[a-zA-Z]\.\s+[a-zA-Z]', s):
+        if re.search(r'^(jumlah|luas|banyaknya|persentase|produksi|populasi|rata-rata|distribusi|indikator|perkembangan|proyeksi)\s+', s, re.IGNORECASE):
+            return True
+
+    return False
 
 
 @router.get("/publications")
@@ -164,6 +203,7 @@ def get_publication_tables(doc_id: str) -> Dict[str, Any]:
     """
     Returns list of granular statistical tables belonging to a specific publication.
     Sorted by page number (halaman).
+    Filters out false-positive narrative fragments.
     """
     try:
         with get_db_cursor() as cur:
@@ -179,10 +219,15 @@ def get_publication_tables(doc_id: str) -> Dict[str, Any]:
 
             items = []
             for r in rows:
+                title = r[2] or ""
+                # Strict statistical table validation filter
+                if not is_valid_statistical_table(title, r[6] or 0, r[7] or 0):
+                    continue
+
                 items.append({
                     "table_id": r[0],
                     "doc_id": r[1],
-                    "judul_tabel": r[2],
+                    "judul_tabel": title,
                     "halaman": r[3],
                     "tahun": r[4],
                     "daerah": r[5] or "Kabupaten Demak",
@@ -332,6 +377,23 @@ def get_statistical_tables(
                 where_clauses.append("doc_title ILIKE %s")
                 params.append(f"%{clean_kategori}%")
 
+            # Exclude false-positive narrative text paragraphs that were accidentally parsed
+            where_clauses.append("""
+                (
+                    table_title !~ '^[a-z]'
+                    AND table_title !~ '[\\-\\,\\/]$'
+                    AND table_title !~ '\\.{4,}'
+                    AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab\\s+[ivxlcdm]+|kata\\s+pengantar|puji\\s+syukur|issn|undang-undang|gambar\\s+\\d+)'
+                    AND table_title !~* '^\\d+\\.\\d+\\.?\\s*(latar|maksud|tujuan|metodologi|ruang\\s+lingkup|sistematika|kesimpulan|saran)'
+                    AND table_title !~* 'badan pusat statistik'
+                    AND (
+                        table_title ~* '^(tabel|table|\\d+\\.[\\d\\.]*)\\s+'
+                        OR table_title ~* '^(jumlah|luas|banyaknya|persentase|produksi|populasi|rata-rata|distribusi|indikator|perkembangan|proyeksi)\\s+'
+                    )
+                    AND jsonb_array_length(records) >= 2
+                )
+            """)
+
             where_sql = " AND ".join(where_clauses)
 
             cur.execute(f"SELECT COUNT(*) FROM statistical_tables WHERE {where_sql}", tuple(params))
@@ -403,6 +465,13 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
             headers_json = row[9] if isinstance(row[9], list) else (json.loads(row[9]) if row[9] else [])
             raw_data_json = row[10] if isinstance(row[10], list) else (json.loads(row[10]) if row[10] else [])
 
+            # Format headers cleanly without ugly concatenated underscores
+            clean_headers = []
+            for h in headers_json:
+                h_str = str(h or "").strip()
+                h_clean = re.sub(r'__+', ' ', h_str).replace('_', ' ').strip()
+                clean_headers.append(h_clean if h_clean else "Kolom")
+
             # Fetch natural language representation from vector_chunks
             cur.execute(
                 """
@@ -428,7 +497,7 @@ def get_table_detail(table_id: str) -> Dict[str, Any]:
                     "daerah": row[6],
                     "row_count": row[7],
                     "column_count": row[8],
-                    "headers": headers_json,
+                    "headers": clean_headers,
                     "rows": raw_data_json,
                     "representasi_teks": representasi_teks,
                     "satuan": row[11],

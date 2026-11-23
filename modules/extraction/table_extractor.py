@@ -141,15 +141,18 @@ class BPSTableExtractor:
                         }
                     )
 
-                    # If no explicit line tables, try text-based heuristic
+                    # If no explicit line tables, only attempt text-based heuristic
+                    # IF the page explicitly contains an official BPS table caption ("Tabel X.X")
                     if not found_tables:
-                        found_tables = page.find_tables(
-                            table_settings={
-                                "vertical_strategy": "text",
-                                "horizontal_strategy": "text",
-                                "snap_tolerance": 4
-                            }
-                        )
+                        page_text_sample = page.extract_text(layout=False) or ""
+                        if re.search(r'(Tabel|Table)\s+[\d\.]+', page_text_sample, re.IGNORECASE):
+                            found_tables = page.find_tables(
+                                table_settings={
+                                    "vertical_strategy": "text",
+                                    "horizontal_strategy": "text",
+                                    "snap_tolerance": 4
+                                }
+                            )
 
                     for t_idx, tbl in enumerate(found_tables):
                         try:
