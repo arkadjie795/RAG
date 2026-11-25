@@ -159,8 +159,49 @@ def get_publications_list(
 
             where_sql = " AND ".join(where_clauses)
 
-            # Total matching publications
-            cur.execute(f"SELECT COUNT(*) FROM publications p WHERE {where_sql}", tuple(params))
+            # CTE for deduplicated publications (unifies slug and hex duplicate rows)
+            cte_sql = f"""
+                WITH ranked_pubs AS (
+                    SELECT 
+                        p.publication_id, 
+                        p.title, 
+                        p.release_date, 
+                        p.category, 
+                        COALESCE(s.t_count, p.total_tables_extracted, 0) AS table_count, 
+                        p.total_chunks_indexed,
+                        p.local_file_path, 
+                        p.file_size_bytes, 
+                        p.checksum_sha256, 
+                        p.download_status, 
+                        p.extraction_status, 
+                        p.pdf_url,
+                        p.created_at,
+                        ROW_NUMBER() OVER (
+                            PARTITION BY LOWER(TRIM(p.title)), p.release_date 
+                            ORDER BY 
+                                CASE WHEN p.publication_id ~ '^[0-9]{{4}}-[0-9]{{2}}-[0-9]{{2}}' THEN 0 ELSE 1 END,
+                                COALESCE(s.t_count, p.total_tables_extracted, 0) DESC,
+                                p.total_chunks_indexed DESC,
+                                p.created_at DESC
+                        ) as rn
+                    FROM publications p
+                    LEFT JOIN (
+                        SELECT doc_id, COUNT(*) AS t_count
+                        FROM statistical_tables
+                        WHERE table_title ~* '^(tabel|table)\\s+[\\d\\.]*'
+                          AND table_title !~* '\\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\\b'
+                          AND table_title !~ '\\.{3,}'
+                          AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab|kata\\s+pengantar|puji\\s+syukur|tim\\s+penyusun|gambar|berakhlak)'
+                          AND table_title !~ '[\\-\\,\\/]$'
+                          AND table_title !~ '^[a-z]'
+                        GROUP BY doc_id
+                    ) s ON p.publication_id = s.doc_id
+                    WHERE {where_sql}
+                )
+            """
+
+            # Total matching unique publications
+            cur.execute(f"{cte_sql} SELECT COUNT(*) FROM ranked_pubs WHERE rn = 1", tuple(params))
             total = cur.fetchone()[0]
 
             # Overall total valid tables across the database
@@ -177,34 +218,24 @@ def get_publications_list(
 
             # Query publications with table count from statistical_tables (using COALESCE)
             query = f"""
+                {cte_sql}
                 SELECT 
-                    p.publication_id, 
-                    p.title, 
-                    p.release_date, 
-                    p.category, 
-                    COALESCE(s.t_count, p.total_tables_extracted, 0) AS table_count, 
-                    p.total_chunks_indexed,
-                    p.local_file_path, 
-                    p.file_size_bytes, 
-                    p.checksum_sha256, 
-                    p.download_status, 
-                    p.extraction_status, 
-                    p.pdf_url,
-                    p.created_at
-                FROM publications p
-                LEFT JOIN (
-                    SELECT doc_id, COUNT(*) AS t_count
-                    FROM statistical_tables
-                    WHERE table_title ~* '^(tabel|table)\\s+[\\d\\.]*'
-                      AND table_title !~* '\\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\\b'
-                      AND table_title !~ '\\.{3,}'
-                      AND table_title !~* '^(assalamu|bupati|halaman|daftar|bab|kata\\s+pengantar|puji\\s+syukur|tim\\s+penyusun|gambar|berakhlak)'
-                      AND table_title !~ '[\\-\\,\\/]$'
-                      AND table_title !~ '^[a-z]'
-                    GROUP BY doc_id
-                ) s ON p.publication_id = s.doc_id
-                WHERE {where_sql}
-                ORDER BY p.release_date DESC NULLS LAST, p.created_at DESC NULLS LAST
+                    publication_id, 
+                    title, 
+                    release_date, 
+                    category, 
+                    table_count, 
+                    total_chunks_indexed,
+                    local_file_path, 
+                    file_size_bytes, 
+                    checksum_sha256, 
+                    download_status, 
+                    extraction_status, 
+                    pdf_url,
+                    created_at
+                FROM ranked_pubs
+                WHERE rn = 1
+                ORDER BY release_date DESC NULLS LAST, created_at DESC NULLS LAST
                 LIMIT %s OFFSET %s
             """
             cur.execute(query, tuple(params + [limit_val, offset_val]))
