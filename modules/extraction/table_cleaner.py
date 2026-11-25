@@ -1,6 +1,7 @@
 """
 Table Cleaner Module for BPS Statistical Tables.
-Handles multi-index header flattening, contextual forward fill, and Indonesian BPS statistical symbol preservation.
+Handles multi-index header flattening, contextual forward fill, watermark stripping,
+and Indonesian BPS statistical symbol preservation.
 """
 import re
 from enum import Enum
@@ -38,13 +39,69 @@ class TableCleaner:
     """Specialized data cleaner for BPS complex statistical tables."""
 
     @staticmethod
-    def clean_cell_text(val: Any) -> str:
-        """Removes internal newlines, extra spaces, and special artifacts from a cell."""
+    def is_watermark_noise(s: str) -> bool:
+        """Identifies if a string is solely BPS watermark debris (e.g. 'https://...', 'o g .', 's p', 'b .')."""
+        s_clean = s.strip()
+        if not s_clean:
+            return True
+        # Explicit URL or known artifact
+        if re.search(r"https?://|demakkab\.bps\.go\.id|\bd_i__o_g\b", s_clean, re.IGNORECASE):
+            return True
+
+        # If it has digits, it's not pure watermark noise
+        if any(c.isdigit() for c in s_clean):
+            return False
+
+        # Preserved statistical symbols are never noise
+        if s_clean in ("-", "–", "—", "- ", "...", "…", "NA", "N/A", "na", "n/a", "%"):
+            return False
+
+        words = re.findall(r"[a-zA-Z]+", s_clean)
+        if not words:
+            # Only punctuation: e.g. '/ / :', '.', '..'
+            return True
+
+        # If all alphanumeric words are single letters (e.g. 'o g .', 's p', 'k a m e d / / :')
+        if all(len(w) <= 1 for w in words):
+            wm_char_set = set("https://demakkabbpsgoid")
+            return set("".join(words).lower()).issubset(wm_char_set)
+
+        return False
+
+    @classmethod
+    def clean_cell_text(cls, val: Any) -> str:
+        """Removes internal newlines, watermark artifacts, and special noise from a cell."""
         if val is None:
             return ""
         s = str(val).strip()
         s = re.sub(r"\s+", " ", s)
-        return s
+
+        # 1. Preserve official BPS statistical symbols
+        if s in ("-", "–", "—", "- ", "...", "…", "NA", "N/A", "na", "n/a", "%"):
+            return s
+
+        # 2. Check pure watermark noise
+        if cls.is_watermark_noise(s):
+            return ""
+
+        # 3. Remove explicit watermark URL substrings
+        s = re.sub(r"https?://[^\s]+", "", s, flags=re.IGNORECASE).strip()
+        s = re.sub(r"demakkab\.bps\.go\.id", "", s, flags=re.IGNORECASE).strip()
+        s = re.sub(r"\bd_i__o_g\b", "", s, flags=re.IGNORECASE).strip()
+
+        # 4. Strip stray short noise letters prefixing a number: e.g. 'i . 82,3' -> '82,3', '. s p18,0' -> '18,0'
+        m_pref = re.match(r"^[a-zA-Z\.\s/:]{1,6}\s*(-?\d+[\d\.,]*)$", s)
+        if m_pref:
+            s = m_pref.group(1).strip()
+
+        # 5. Strip stray short noise letters suffixing a number: e.g. '82,3 o g .' -> '82,3'
+        m_suff = re.match(r"^(-?\d+[\d\.,]*)\s*[a-zA-Z\.\s/:]{1,6}$", s)
+        if m_suff:
+            last_tok = s.split()[-1] if " " in s else ""
+            if last_tok.lower() not in {"kg", "ton", "ha", "km", "m", "th"}:
+                s = m_suff.group(1).strip()
+
+        return re.sub(r"\s+", " ", s).strip()
 
     @classmethod
     def detect_header_rows(cls, raw_matrix: List[List[Any]], max_scan: int = 4) -> int:
@@ -119,6 +176,7 @@ class TableCleaner:
             else:
                 col_name = "_".join(col_parts)
 
+            col_name = col_name.replace("%", "Persen")
             col_name = re.sub(r"[^\w\s-]", "", col_name)
             col_name = re.sub(r"[\s-]+", "_", col_name).strip("_")
             final_headers.append(col_name)
@@ -175,7 +233,7 @@ class TableCleaner:
             )
 
         # 3. Not applicable
-        if raw_str in ("NA", "N/A", "n/a", "na"):
+        if raw_str in ("NA", "N/A", "na", "n/a"):
             return StatisticalCell(
                 raw_value=raw_str,
                 normalized_value=None,
@@ -299,6 +357,51 @@ class TableCleaner:
         return cell.raw_value
 
     @classmethod
+    def is_valid_statistical_table(cls, df: pd.DataFrame, title: str = "") -> bool:
+        """
+        Strict gatekeeper to ensure extracted matrix is a genuine BPS statistical table:
+        1. Must have at least 2 rows and at least 2 columns.
+        2. Title must not be a glossary definition (adalah, merupakan, etc.) or TOC entry.
+        3. At least 35% of data cells must contain valid numbers or statistical symbols.
+        """
+        if df is None or df.empty:
+            return False
+        if len(df) < 2 or len(df.columns) < 2:
+            return False
+
+        t = (title or "").strip()
+        # Reject glossary definitions
+        if re.search(r"\b(adalah|merupakan|yaitu|diartikan|didefinisikan)\b", t, re.IGNORECASE):
+            return False
+        # Reject TOC leader dots
+        if re.search(r"\.{3,}", t):
+            return False
+        # Reject narrative headings and preamble
+        if re.search(r"^(daftar\s+(tabel|gambar|isi)|tim\s+penyusun|kata\s+pengantar|sistematika|bab\s+[\dIVXLCDM]+)", t, re.IGNORECASE):
+            return False
+
+        # Calculate numerical and statistical density in data cells
+        total_cells = 0
+        valid_stat_cells = 0
+        for col in df.columns:
+            for val in df[col]:
+                if val is None or pd.isna(val) or val == "":
+                    continue
+                total_cells += 1
+                cell = cls.parse_statistical_cell(val)
+                if cell.normalized_value is not None or cell.value_status in (
+                    ValueStatus.NIL, ValueStatus.NEGLIGIBLE, ValueStatus.ZERO,
+                    ValueStatus.NOT_AVAILABLE, ValueStatus.NOT_APPLICABLE,
+                    ValueStatus.PROVISIONAL, ValueStatus.REVISED
+                ):
+                    valid_stat_cells += 1
+
+        if total_cells == 0:
+            return False
+        ratio = valid_stat_cells / total_cells
+        return ratio >= 0.35
+
+    @classmethod
     def clean_table_dataframe(
         cls, 
         raw_matrix: List[List[Any]], 
@@ -306,10 +409,13 @@ class TableCleaner:
     ) -> Optional[pd.DataFrame]:
         """
         Transforms raw extracted table matrix into a clean, structured pandas DataFrame:
-        1. Multi-level header extraction & flattening
-        2. Contextual merged-cell forward-fill (respecting summary rows like Jumlah/Total)
-        3. Statistical symbol parsing without destructive 0-coercion
+        1. Expands embedded multiline rows (e.g. all desas merged in one cell).
+        2. Multi-level header extraction & flattening.
+        3. Contextual merged-cell forward-fill (respecting summary rows like Jumlah/Total).
+        4. Statistical symbol parsing without destructive 0-coercion.
         """
+        if isinstance(raw_matrix, pd.DataFrame):
+            raw_matrix = [list(raw_matrix.columns)] + raw_matrix.values.tolist()
         if not raw_matrix or len(raw_matrix) < 2:
             return None
 
@@ -325,6 +431,41 @@ class TableCleaner:
         headers = cls.flatten_multi_index_headers(header_rows)
         num_cols = len(headers)
 
+        # Step 1: Expand embedded multiline rows (as observed in borderless tables)
+        expanded_data_rows = []
+        for r in data_rows:
+            multilines = [str(c).strip().split("\n") for c in r if c is not None]
+            max_lines = max((len(ml) for ml in multilines), default=1)
+            
+            if max_lines > 1:
+                # If all columns have multiple lines matching row count
+                if all(len(ml) == max_lines or len(ml) <= 1 for ml in multilines):
+                    for l_idx in range(max_lines):
+                        sub_row = []
+                        for c in r:
+                            c_lines = str(c).strip().split("\n") if c is not None else []
+                            val = c_lines[l_idx].strip() if l_idx < len(c_lines) else (c_lines[0].strip() if len(c_lines) == 1 else "")
+                            sub_row.append(val)
+                        if any(sub_row):
+                            expanded_data_rows.append(sub_row)
+                else:
+                    # One cell has all the lines (e.g. '1 Pilangwetan 558 2.395 4,29\n2 Kebonagung...')
+                    for c in r:
+                        if c is not None and "\n" in str(c):
+                            for line in str(c).strip().split("\n"):
+                                tokens = line.split()
+                                if len(tokens) >= num_cols and num_cols > 1:
+                                    cat = " ".join(tokens[:-(num_cols - 1)])
+                                    vals = tokens[-(num_cols - 1):]
+                                    expanded_data_rows.append([cat] + vals)
+                                else:
+                                    expanded_data_rows.append([line] + [""] * (num_cols - 1))
+                            break
+            else:
+                expanded_data_rows.append(r)
+
+        data_rows = expanded_data_rows
+
         normalized_data = []
         for r in data_rows:
             cleaned_r = [cls.clean_cell_text(c) for c in r]
@@ -333,7 +474,8 @@ class TableCleaner:
             elif len(cleaned_r) > num_cols:
                 cleaned_r = cleaned_r[:num_cols]
             
-            if any(cleaned_r):
+            # Skip rows where all cells are empty or noise
+            if any(cleaned_r) and not all(cls.is_watermark_noise(c) for c in cleaned_r if c):
                 normalized_data.append(cleaned_r)
 
         if not normalized_data:
@@ -342,16 +484,13 @@ class TableCleaner:
         df = pd.DataFrame(normalized_data, columns=headers)
 
         # Contextual forward-fill for category columns (leftmost 1 or 2 columns)
-        # Summary keywords that must NOT be forward-filled over
         summary_tokens = {"jumlah", "total", "rata-rata", "ratarata", "subtotal"}
 
         for col_idx in range(min(2, len(df.columns))):
-            col_name = df.columns[col_idx]
             curr_val = ""
             for idx in range(len(df)):
-                val = df.iloc[idx, col_idx].strip()
-                # Check if this row is a summary row
-                row_str = " ".join(str(c).lower() for c in df.iloc[idx])
+                val = str(df.iloc[idx, col_idx]).strip() if df.iloc[idx, col_idx] is not None else ""
+                row_str = " ".join(str(c).lower() for c in df.iloc[idx] if c is not None)
                 is_summary = any(tok in row_str for tok in summary_tokens)
                 
                 if val:

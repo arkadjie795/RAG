@@ -44,6 +44,7 @@ class HybridRetriever:
         emb_literal = "[" + ",".join(str(x) for x in query_vector) + "]"
 
         daerah_pattern = f"%{target_daerah}%" if target_daerah else None
+        tahun_pattern = f"%{target_tahun}%" if target_tahun else None
 
         sql = f"""
             WITH dense_candidates AS (
@@ -55,8 +56,8 @@ class HybridRetriever:
                     ROW_NUMBER() OVER (ORDER BY embedding <=> %s::vector ASC) AS dense_rank
                 FROM vector_chunks
                 WHERE embedding IS NOT NULL
-                  AND (%s::text IS NULL OR daerah ILIKE %s)
-                  AND (%s::text IS NULL OR tahun = %s)
+                  AND (%s::text IS NULL OR daerah ILIKE %s OR daerah ILIKE '%%Kabupaten Demak%%' OR representasi_teks ILIKE %s)
+                  AND (%s::text IS NULL OR tahun = %s OR representasi_teks ILIKE %s)
                 LIMIT 30
             ),
             lexical_candidates AS (
@@ -67,8 +68,8 @@ class HybridRetriever:
                     ROW_NUMBER() OVER (ORDER BY ts_rank_cd(tsv, plainto_tsquery('indonesian', %s)) DESC) AS lex_rank
                 FROM vector_chunks
                 WHERE tsv @@ plainto_tsquery('indonesian', %s)
-                  AND (%s::text IS NULL OR daerah ILIKE %s)
-                  AND (%s::text IS NULL OR tahun = %s)
+                  AND (%s::text IS NULL OR daerah ILIKE %s OR daerah ILIKE '%%Kabupaten Demak%%' OR representasi_teks ILIKE %s)
+                  AND (%s::text IS NULL OR tahun = %s OR representasi_teks ILIKE %s)
                 LIMIT 30
             )
             SELECT 
@@ -84,11 +85,11 @@ class HybridRetriever:
 
         params = (
             emb_literal, emb_literal,
-            target_daerah, daerah_pattern,
-            target_tahun, target_tahun,
+            target_daerah, daerah_pattern, daerah_pattern,
+            target_tahun, target_tahun, tahun_pattern,
             query, query,
-            target_daerah, daerah_pattern,
-            target_tahun, target_tahun,
+            target_daerah, daerah_pattern, daerah_pattern,
+            target_tahun, target_tahun, tahun_pattern,
             top_k
         )
 

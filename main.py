@@ -143,11 +143,11 @@ class BPSPipelineOrchestrator:
             extracted_doc=extracted_doc
         )
 
-        # 4b. Vector DB (ChromaDB / PostgreSQL Vector Store with metadata payloads)
-        self.vector_store.upsert_chunks(embedded_chunks)
-
-        # 4c. PostgreSQL Relational Store (Publications & Statistical Tables)
+        # 4b. PostgreSQL Relational Store (Publications & Statistical Tables)
         self._save_to_postgres(pub_id, extracted_doc, pdf_path, embedded_chunks)
+
+        # 4c. Vector DB (ChromaDB / PostgreSQL Vector Store with metadata payloads)
+        self.vector_store.upsert_chunks(embedded_chunks)
 
         # Step 5: Update Registry State
         self.registry.mark_extraction_completed(
@@ -190,6 +190,14 @@ class BPSPipelineOrchestrator:
             from config.database import get_db_connection
             with get_db_connection() as conn:
                 with conn.cursor() as cur:
+                    # Clean up old/stale tables and vector chunks for this document to ensure 100% clean data
+                    alt_id = pdf_path.stem.split("_")[0] if len(pdf_path.stem.split("_")[0]) == 24 else None
+                    cur.execute("DELETE FROM statistical_tables WHERE doc_id = %s OR table_id LIKE %s;", (pub_id, f"{pub_id}_%"))
+                    cur.execute("DELETE FROM vector_chunks WHERE doc_id = %s;", (pub_id,))
+                    if alt_id and alt_id != pub_id:
+                        cur.execute("DELETE FROM statistical_tables WHERE doc_id = %s OR table_id LIKE %s;", (alt_id, f"{alt_id}_%"))
+                        cur.execute("DELETE FROM vector_chunks WHERE doc_id = %s;", (alt_id,))
+
                     # 1. Upsert publication
                     cur.execute(
                         """

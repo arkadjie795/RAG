@@ -1,13 +1,15 @@
 """
 BPS Text & Narrative Extractor Module.
 Extracts narrative chapters, executive summaries, and analytical descriptions
-from BPS PDFs while filtering out header/footer noise and table zones.
+from BPS PDFs while filtering out watermark noise, header/footer, and table zones.
 """
 import re
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import pdfplumber
 from loguru import logger
+
+from modules.extraction.table_cleaner import TableCleaner
 from config.settings import settings
 
 
@@ -25,6 +27,19 @@ class BPSTextExtractor:
             r"bupati\s+demak"
         ]
 
+    @staticmethod
+    def is_clean_char(obj: Dict[str, Any]) -> bool:
+        """Filters out rotated or oversized watermark characters without modifying genuine content."""
+        if obj.get("object_type") == "char":
+            m = obj.get("matrix", (1, 0, 0, 1))
+            if abs(m[1]) > 0.05 or abs(m[2]) > 0.05:
+                return False
+            if obj.get("size", 0) > 18:
+                return False
+            if "demakkab" in obj.get("text", "").lower():
+                return False
+        return True
+
     def _is_header_or_footer(self, line: str, y0: float, y1: float, page_height: float) -> bool:
         """Determines if a text line is in the extreme top/bottom margins (header/footer)."""
         if y0 < 45 or y1 > (page_height - 45):
@@ -40,7 +55,8 @@ class BPSTextExtractor:
         pages_to_extract: Optional[List[int]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Extracts narrative text blocks, keeping track of active Chapters and Sections.
+        Extracts narrative text blocks, keeping track of active Chapters and Sections,
+        while skipping watermark debris and table data zones.
         """
         extracted_text_blocks: List[Dict[str, Any]] = []
 
@@ -67,10 +83,16 @@ class BPSTextExtractor:
                         continue
 
                     page = pdf.pages[page_num - 1]
-                    page_height = page.height
+                    clean_page = page.filter(self.is_clean_char)
+                    page_height = clean_page.height
+                    
+                    page_text = clean_page.extract_text(layout=False) or ""
+                    
+                    # Detect if page is a pure statistical table page (Tabel X.X)
+                    is_table_page = bool(re.search(r'\b(Tabel|Table)\s+[\d\.]+', page_text, re.IGNORECASE))
                     
                     # Extract words with layout information
-                    words = page.extract_words(
+                    words = clean_page.extract_words(
                         keep_blank_chars=False,
                         extra_attrs=["size", "fontname"]
                     )
@@ -96,6 +118,10 @@ class BPSTextExtractor:
                         if not line_text:
                             continue
 
+                        # Filter watermark noise
+                        if TableCleaner.is_watermark_noise(line_text):
+                            continue
+
                         # Check header/footer
                         if self._is_header_or_footer(line_text, avg_y0, avg_y1, page_height):
                             continue
@@ -112,14 +138,32 @@ class BPSTextExtractor:
                             current_section = section_match.group(1).strip()
                             continue
 
+                        # Filter TOC leader dots (e.g. "Daftar Tabel ............. 11")
+                        if re.search(r"\.{3,}", line_text):
+                            continue
+
+                        # If page has a statistical table, skip lines that look like table data
+                        if is_table_page:
+                            # Table title line
+                            if re.match(r"^(Tabel|Table)\s+[\d\.]+", line_text, re.IGNORECASE):
+                                continue
+                            # Source line
+                            if re.match(r"^(Sumber|Source)\s*[:\.]", line_text, re.IGNORECASE):
+                                continue
+                            # Numeric rows or kecamatan rows
+                            if re.search(r"\d+[\d\.,]*\s+\d+[\d\.,]*", line_text):
+                                continue
+
                         # Skip lines that are purely table headers or numeric columns
-                        if re.match(r"^[\d\s\.,\-%]+$", line_text) and len(line_text.split()) > 3:
+                        if re.match(r"^[\d\s\.,\-%]+$", line_text) and len(line_text.split()) > 2:
                             continue
 
                         # Detect paragraph continuation vs new paragraph
                         if line_text.endswith((".", ":", ";", "!")):
                             current_paragraph.append(line_text)
                             full_para_text = " ".join(current_paragraph).strip()
+                            # Clean cell text formatting
+                            full_para_text = TableCleaner.clean_cell_text(full_para_text)
                             
                             if len(full_para_text) > 40:  # Ignore trivial noise
                                 extracted_text_blocks.append({
@@ -136,6 +180,7 @@ class BPSTextExtractor:
                     # Flush remaining line buffer for this page
                     if current_paragraph:
                         full_para_text = " ".join(current_paragraph).strip()
+                        full_para_text = TableCleaner.clean_cell_text(full_para_text)
                         if len(full_para_text) > 40:
                             extracted_text_blocks.append({
                                 "halaman": page_num,
@@ -145,7 +190,7 @@ class BPSTextExtractor:
                                 "teks": full_para_text
                             })
 
-            logger.info(f"Extracted {len(extracted_text_blocks)} narrative text blocks from {pdf_path.name}")
+            logger.info(f"Extracted {len(extracted_text_blocks)} clean narrative text blocks from {pdf_path.name}")
 
         except Exception as e:
             logger.error(f"Error extracting text from {pdf_path.name}: {e}")

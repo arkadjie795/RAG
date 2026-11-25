@@ -48,7 +48,20 @@ class PDFExtractionPipeline:
         # 2. Extract Text Blocks
         texts = self.text_extractor.extract_text_chunks_from_pdf(pdf_path, pages_to_extract=pages)
 
-        # 3. Assemble complete extraction payload
+        # 3. Fallback: If document has 0 digital tables and very few texts (scanned / vector-flattened), run OCR
+        if (len(tables) == 0 and len(texts) == 0) or (len(tables) == 0 and len(texts) < 10):
+            logger.warning(
+                f"No digital tables found in [{pub_id}] ({pdf_path.name}) [tables={len(tables)}, texts={len(texts)}]. "
+                f"Falling back to RapidOCR engine..."
+            )
+            try:
+                from modules.extraction.ocr_handler import BPSOCRHandler
+                ocr_handler = BPSOCRHandler()
+                tables, texts = ocr_handler.extract_tables_and_texts_from_pdf(pdf_path, pages_to_extract=pages)
+            except Exception as ocr_err:
+                logger.error(f"OCR fallback extraction failed for {pdf_path.name}: {ocr_err}")
+
+        # 4. Assemble complete extraction payload
         extracted_doc = {
             "dokumen_id": pub_id,
             "dokumen_sumber": doc_title,
